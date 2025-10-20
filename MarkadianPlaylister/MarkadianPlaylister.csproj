@@ -6,7 +6,20 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <PackageIcon>LOGO_OFFICIAL_WHITE_SMALL.png</PackageIcon>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="LOGO_OFFICIAL_WHITE_SMALL - Copy.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Filip's Site Resources\LOGOS\LOGO_OFFICIAL_WHITE_SMALL.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
