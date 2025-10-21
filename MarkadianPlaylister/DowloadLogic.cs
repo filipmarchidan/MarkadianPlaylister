@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MarkadianPlaylister
@@ -57,7 +58,7 @@ namespace MarkadianPlaylister
                 return;
             }
             else
-                await DownloadWithYtDlp(videoUrl, filePath);
+                await DownloadWithYtDlp2(videoUrl, filePath);
         }
 
         private async Task startDownloadingWithQueue(Queue<string> videoLinks, string filePath)
@@ -67,7 +68,7 @@ namespace MarkadianPlaylister
                 if (!locked)
                 {
                     string currentVideo = videoLinks.Dequeue();
-                    await DownloadWithYtDlp(currentVideo, filePath);
+                    await DownloadWithYtDlp2(currentVideo, filePath);
                     locked = true;
                 }
             }
@@ -160,6 +161,137 @@ namespace MarkadianPlaylister
             StatusChanged?.Invoke("Downloaded");
             DownloadCompleted?.Invoke(downloadedFile);
         }
+
+
+        private async Task DownloadWithYtDlp2(string videoUrl, string folderPath)
+        {
+            ProgressChanged?.Invoke(0);
+            StatusChanged?.Invoke("Preparing download...");
+
+            if (!File.Exists(exePath))
+                throw new FileNotFoundException("yt-dlp executable not found", exePath);
+
+            // ✅ Validate URL
+            if (!Uri.TryCreate(videoUrl, UriKind.Absolute, out var uri) ||
+                (!uri.Host.Contains("youtube.com") && !uri.Host.Contains("youtu.be")))
+            {
+                StatusChanged?.Invoke("Invalid YouTube URL");
+                return;
+            }
+
+            // ✅ Prepare paths
+            string bitRate = markadianSettings.bitRateSelector ?? "192";
+            string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+
+            // We’ll use yt-dlp’s built-in printing of the final filepath after postprocessing
+            string outputTemplate = Path.Combine(folderPath, "%(title)s.%(ext)s");
+
+            // ✅ Build arguments — single-pass audio extraction, concurrent fragments, safe output
+            string arguments =
+                $"-f bestaudio " +
+                $"--extract-audio --audio-format mp3 --audio-quality {bitRate}K " +
+                $"--geo-bypass --geo-bypass-country US " +
+                $"--no-cache-dir --no-playlist --newline " +
+                $"--no-check-certificates --ignore-errors " +
+                $"--ffmpeg-location \"{ffmpegPath}\" " +
+                $"--concurrent-fragments 8 " +
+                $"--print after_move:filepath " +
+                $"--user-agent \"Mozilla/5.0\" " +
+                $"-o \"{outputTemplate}\" \"{videoUrl}\"";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            StatusChanged?.Invoke("Downloading...");
+
+            string? downloadedFilePath = null;
+
+            using var proc = Process.Start(psi);
+            if (proc == null)
+            {
+                StatusChanged?.Invoke("Failed to start yt-dlp.");
+                return;
+            }
+
+            // ✅ Asynchronous reading for real-time progress updates
+            var outputReader = Task.Run(async () =>
+            {
+                string? line;
+                while ((line = await proc.StandardOutput.ReadLineAsync()) != null)
+                {
+                    if (line.Contains("[download]"))
+                    {
+                        var match = Regex.Match(line, @"(\d+(?:\.\d+)?)%");
+                        if (match.Success)
+                        {
+                            int percent = (int)Math.Round(double.Parse(match.Groups[1].Value));
+                            ProgressChanged?.Invoke(Math.Clamp(percent, 0, 100));
+                        }
+                    }
+                    else if (line.StartsWith("[ExtractAudio]") || line.Contains("Destination:"))
+                    {
+                        StatusChanged?.Invoke("Converting...");
+                    }
+                    else if (line.Contains(".mp3") && File.Exists(line.Trim()))
+                    {
+                        downloadedFilePath = line.Trim();
+                    }
+                }
+            });
+
+            var errorReader = Task.Run(async () =>
+            {
+                while (await proc.StandardError.ReadLineAsync() is string errLine)
+                {
+                    if (errLine.Contains("error", StringComparison.OrdinalIgnoreCase))
+                        Debug.WriteLine($"yt-dlp error: {errLine}");
+                }
+            });
+
+            await Task.WhenAll(outputReader, errorReader);
+            await proc.WaitForExitAsync();
+
+            // ✅ Handle completion
+            if (proc.ExitCode != 0)
+            {
+                StatusChanged?.Invoke("Download failed.");
+                return;
+            }
+
+            // ✅ If yt-dlp didn’t print the file path, try to infer it
+            if (string.IsNullOrWhiteSpace(downloadedFilePath))
+            {
+                downloadedFilePath = Directory
+                    .EnumerateFiles(folderPath, "*.mp3", SearchOption.TopDirectoryOnly)
+                    .OrderByDescending(File.GetCreationTimeUtc)
+                    .FirstOrDefault();
+            }
+
+            if (string.IsNullOrWhiteSpace(downloadedFilePath) || !File.Exists(downloadedFilePath))
+            {
+                StatusChanged?.Invoke("Downloaded file not found.");
+                return;
+            }
+
+            // ✅ Update UI
+            songsDownloaded++;
+            QueueStatusChanged?.Invoke($"{songsDownloaded} / {songsEnqueued} Songs Downloaded");
+            StatusChanged?.Invoke("Downloaded");
+            ProgressChanged?.Invoke(100);
+            DownloadCompleted?.Invoke(downloadedFilePath);
+        }
+
+
+
 
         private string MakeSafeFileName(string name)
         {
