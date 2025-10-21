@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             BitRate = new ColumnHeader();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
@@ -35,6 +36,14 @@
             editToolStripMenuItem = new ToolStripMenuItem();
             downloadLocationToolStripMenuItem = new ToolStripMenuItem();
             preferencesToolStripMenuItem = new ToolStripMenuItem();
+            themeToolStripMenuItem = new ToolStripMenuItem();
+            lightToolStripMenuItem = new ToolStripMenuItem();
+            darkToolStripMenuItem = new ToolStripMenuItem();
+            viewToolStripMenuItem = new ToolStripMenuItem();
+            downloadToolStripMenuItem = new ToolStripMenuItem();
+            metadataPanelToolStripMenuItem = new ToolStripMenuItem();
+            youtubeSearchPanelToolStripMenuItem = new ToolStripMenuItem();
+            listPanelToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
             bottomNavigator = new SplitContainer();
@@ -104,7 +113,7 @@
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Padding = new Padding(8, 2, 0, 2);
@@ -128,7 +137,7 @@
             // 
             // editToolStripMenuItem
             // 
-            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { downloadLocationToolStripMenuItem, preferencesToolStripMenuItem });
+            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { downloadLocationToolStripMenuItem, preferencesToolStripMenuItem, themeToolStripMenuItem });
             editToolStripMenuItem.Name = "editToolStripMenuItem";
             editToolStripMenuItem.Size = new Size(58, 29);
             editToolStripMenuItem.Text = "Edit";
@@ -146,6 +155,74 @@
             preferencesToolStripMenuItem.Size = new Size(268, 34);
             preferencesToolStripMenuItem.Text = "Preferences";
             preferencesToolStripMenuItem.Click += preferencesToolStripMenuItem_Click;
+            // 
+            // themeToolStripMenuItem
+            // 
+            themeToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { lightToolStripMenuItem, darkToolStripMenuItem });
+            themeToolStripMenuItem.Name = "themeToolStripMenuItem";
+            themeToolStripMenuItem.Size = new Size(268, 34);
+            themeToolStripMenuItem.Text = "Theme";
+            // 
+            // lightToolStripMenuItem
+            // 
+            lightToolStripMenuItem.Checked = true;
+            lightToolStripMenuItem.CheckState = CheckState.Checked;
+            lightToolStripMenuItem.Name = "lightToolStripMenuItem";
+            lightToolStripMenuItem.Size = new Size(153, 34);
+            lightToolStripMenuItem.Text = "Light";
+            lightToolStripMenuItem.Click += lightToolStripMenuItem_Click;
+            // 
+            // darkToolStripMenuItem
+            // 
+            darkToolStripMenuItem.Name = "darkToolStripMenuItem";
+            darkToolStripMenuItem.Size = new Size(153, 34);
+            darkToolStripMenuItem.Text = "Dark";
+            darkToolStripMenuItem.Click += darkToolStripMenuItem_Click;
+            // 
+            // viewToolStripMenuItem
+            // 
+            viewToolStripMenuItem.Checked = true;
+            viewToolStripMenuItem.CheckState = CheckState.Checked;
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { downloadToolStripMenuItem, metadataPanelToolStripMenuItem, youtubeSearchPanelToolStripMenuItem, listPanelToolStripMenuItem });
+            viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+            viewToolStripMenuItem.Size = new Size(65, 29);
+            viewToolStripMenuItem.Text = "View";
+            // 
+            // downloadToolStripMenuItem
+            // 
+            downloadToolStripMenuItem.Checked = true;
+            downloadToolStripMenuItem.CheckState = CheckState.Checked;
+            downloadToolStripMenuItem.Name = "downloadToolStripMenuItem";
+            downloadToolStripMenuItem.Size = new Size(282, 34);
+            downloadToolStripMenuItem.Text = "Download Panel";
+            downloadToolStripMenuItem.Click += downloadToolStripMenuItem_Click;
+            // 
+            // metadataPanelToolStripMenuItem
+            // 
+            metadataPanelToolStripMenuItem.Checked = true;
+            metadataPanelToolStripMenuItem.CheckState = CheckState.Checked;
+            metadataPanelToolStripMenuItem.Name = "metadataPanelToolStripMenuItem";
+            metadataPanelToolStripMenuItem.Size = new Size(282, 34);
+            metadataPanelToolStripMenuItem.Text = "Metadata Panel";
+            metadataPanelToolStripMenuItem.Click += metadataPanelToolStripMenuItem_Click;
+            // 
+            // youtubeSearchPanelToolStripMenuItem
+            // 
+            youtubeSearchPanelToolStripMenuItem.Checked = true;
+            youtubeSearchPanelToolStripMenuItem.CheckState = CheckState.Checked;
+            youtubeSearchPanelToolStripMenuItem.Name = "youtubeSearchPanelToolStripMenuItem";
+            youtubeSearchPanelToolStripMenuItem.Size = new Size(282, 34);
+            youtubeSearchPanelToolStripMenuItem.Text = "Youtube Search Panel";
+            youtubeSearchPanelToolStripMenuItem.Click += youtubeSearchPanelToolStripMenuItem_Click;
+            // 
+            // listPanelToolStripMenuItem
+            // 
+            listPanelToolStripMenuItem.Checked = true;
+            listPanelToolStripMenuItem.CheckState = CheckState.Checked;
+            listPanelToolStripMenuItem.Name = "listPanelToolStripMenuItem";
+            listPanelToolStripMenuItem.Size = new Size(282, 34);
+            listPanelToolStripMenuItem.Text = "List Panel";
+            listPanelToolStripMenuItem.Click += listPanelToolStripMenuItem_Click;
             // 
             // splitContainer1
             // 
@@ -311,6 +388,7 @@
             linkText.Size = new Size(1351, 31);
             linkText.TabIndex = 1;
             linkText.DoubleClick += linkText_DoubleClick;
+            linkText.KeyDown += linkText_KeyDown;
             // 
             // label1
             // 
@@ -364,6 +442,8 @@
             youtubeSearchTextBox.Name = "youtubeSearchTextBox";
             youtubeSearchTextBox.Size = new Size(1351, 31);
             youtubeSearchTextBox.TabIndex = 0;
+            youtubeSearchTextBox.KeyDown += youtubeSearchTextBox_KeyDown;
+            youtubeSearchTextBox.KeyPress += youtubeSearchTextBox_KeyPress;
             // 
             // youtubeSearchButton
             // 
@@ -657,7 +737,7 @@
             // 
             // pictureBox1
             // 
-            pictureBox1.BackColor = Color.WhiteSmoke;
+            pictureBox1.BackColor = Color.Gainsboro;
             pictureBox1.BackgroundImageLayout = ImageLayout.Center;
             pictureBox1.Location = new Point(3, 453);
             pictureBox1.Name = "pictureBox1";
@@ -674,13 +754,17 @@
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
             ClientSize = new Size(1836, 810);
             Controls.Add(splitContainer1);
             Controls.Add(menuStrip1);
+            Cursor = Cursors.IBeam;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
             Margin = new Padding(4);
             Name = "Form1";
-            Text = "Form1";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Markadian Playlister";
             Load += Form1_Load;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
@@ -760,5 +844,13 @@
         private TextBox youtubeSearchTextBox;
         private Button youtubeSearchButton;
         private FlowLayoutPanel youtubeSearchResults;
+        private ToolStripMenuItem viewToolStripMenuItem;
+        private ToolStripMenuItem downloadToolStripMenuItem;
+        private ToolStripMenuItem metadataPanelToolStripMenuItem;
+        private ToolStripMenuItem youtubeSearchPanelToolStripMenuItem;
+        private ToolStripMenuItem listPanelToolStripMenuItem;
+        private ToolStripMenuItem themeToolStripMenuItem;
+        private ToolStripMenuItem lightToolStripMenuItem;
+        private ToolStripMenuItem darkToolStripMenuItem;
     }
 }

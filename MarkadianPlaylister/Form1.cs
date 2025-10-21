@@ -4,9 +4,11 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Forms.VisualStyles;
 using TagLib.Id3v2;
 using Xabe.FFmpeg;
 using YoutubeExplode;
+using YoutubeExplode.Common;
 using YoutubeExplode.Converter;
 using YoutubeExplode.Videos.Streams;
 
@@ -16,6 +18,7 @@ namespace MarkadianPlaylister
     {
 
         public MarkadianSettings markadianSettings;
+        public SearchLogic searchLogic = new SearchLogic();
         public static string filePath;
         public bool locked;
         public static int songsDownloaded { get; set; }
@@ -30,6 +33,32 @@ namespace MarkadianPlaylister
         public Form1()
         {
             InitializeComponent();
+
+
+
+            searchLogic.downloadLogic.ProgressChanged += (value) =>
+            {
+                if (progressSongStatus.InvokeRequired)
+                    progressSongStatus.Invoke(() => progressSongStatus.Value = value);
+                else
+                    progressSongStatus.Value = value;
+            };
+
+            searchLogic.downloadLogic.StatusChanged += (text) =>
+            {
+                if (statusText.InvokeRequired)
+                    statusText.Invoke(() => statusText.Text = text);
+                else
+                    statusText.Text = text;
+            };
+
+            searchLogic.downloadLogic.QueueStatusChanged += (text) =>
+            {
+                if (statusQueue.InvokeRequired)
+                    statusQueue.Invoke(() => statusQueue.Text = text);
+                else
+                    statusQueue.Text = text;
+            };
         }
 
         private void splitContainer1_Panel2_Paint(object sender, PaintEventArgs e)
@@ -41,6 +70,8 @@ namespace MarkadianPlaylister
         {
             listViewSongs.Items.Clear();
             markadianSettings = SettingsManager.LoadSettings();
+            ThemeManager.SetTheme(markadianSettings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
+            ThemeManager.ApplyTheme(this);
             filePath = markadianSettings.filePath;
             pathDisplay.Text = filePath.ToString();
             songsDownloaded = 0;
@@ -84,26 +115,6 @@ namespace MarkadianPlaylister
 
         }
 
-        private async Task<string> RunFFprobe(string filePath)
-        {
-            string ffprobePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffprobe.exe");
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = ffprobePath,
-                Arguments = $"-v error -select_streams a:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            string output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            return output.Trim(); // returns bitrate in bits per second
-        }
 
         private async void downloadButton_Click(object sender, EventArgs e)
         {
@@ -122,160 +133,11 @@ namespace MarkadianPlaylister
                 return;
             }
 
-            
+            await searchLogic.downloadLogic.handleDownloadLogic(videoUrl);
+
         }
 
-        private async Task handleDownloadLogic(String videoUrl) {
-            videoUrl = SanitizeYoutubeUrl(videoUrl);
-            if (markadianSettings.enableQueue)
-            {
 
-                videoLinks.Enqueue(videoUrl);
-                songsEnqueued++;
-                statusQueue.Text = songsDownloaded.ToString() + " / " + songsEnqueued.ToString() + " Songs Downloaded";
-
-                if (videoLinks.Count == 1)
-                {
-                    locked = false;
-                    await startDownloadingWithQueue(videoLinks, filePath);
-                }
-                return;
-            }
-            else await DownloadWithYtDlp(videoUrl, filePath);
-        }
-
-        private async Task startDownloadingWithQueue(Queue<string> videoLinks, string filePath)
-        {
-
-
-            while (videoLinks.Count > 0)
-            {
-                if (!locked)
-                {
-                    string currentVideo = videoLinks.Dequeue();
-                    await DownloadWithYtDlp(currentVideo, filePath);
-                    locked = true;
-                }
-
-            }
-        }
-
-        private async Task DownloadWithYtDlp(string videoUrl, string folderPath)
-        {
-            progressSongStatus.Value = 0;
-
-            // Path to yt-dlp
-            string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
-            if (!File.Exists(exePath))
-                throw new FileNotFoundException("yt-dlp executable not found", exePath);
-
-            // Validate URL
-            bool IsValidYoutubeUrl(string url) =>
-                Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-                (uri.Host.Contains("youtube.com") || uri.Host.Contains("youtu.be"));
-
-            if (!IsValidYoutubeUrl(videoUrl))
-            {
-                MessageBox.Show("Not a valid YouTube URL");
-                return;
-            }
-
-            // --- Step 1: Get video title ---
-            var titlePsi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = $"--get-title \"{videoUrl}\"",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var titleProc = Process.Start(titlePsi);
-            string videoTitle = (await titleProc.StandardOutput.ReadToEndAsync()).Trim();
-            await titleProc.WaitForExitAsync();
-
-            if (string.IsNullOrWhiteSpace(videoTitle))
-                videoTitle = "UnknownTitle";
-
-            // --- Step 2: Sanitize filename ---
-            string MakeSafeFileName(string name)
-            {
-                foreach (char c in Path.GetInvalidFileNameChars())
-                    name = name.Replace(c, '_');
-                return name;
-            }
-
-            string safeTitle = MakeSafeFileName(videoTitle);
-
-            // --- Step 3: Set output template and target file ---
-            string outputTemplate = Path.Combine(folderPath, safeTitle + ".%(ext)s");
-            string downloadedFile = Path.Combine(folderPath, safeTitle + ".mp3");
-            string tempFile = Path.Combine(folderPath, safeTitle + "_temp.mp3");
-
-            // --- Step 4: Download with yt-dlp ---
-            var psi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = $"-f bestaudio --no-cache-dir --extract-audio --audio-format mp3 " +
-                            $"--user-agent \"Mozilla/5.0\" " +
-                            $"--ffmpeg-location \"{Path.GetDirectoryName(ffmpeg)}\" " +
-                            $"-o \"{outputTemplate}\" \"{videoUrl}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var proc = Process.Start(psi);
-            string stdout = await proc.StandardOutput.ReadToEndAsync();
-            string stderr = await proc.StandardError.ReadToEndAsync();
-            await proc.WaitForExitAsync();
-
-            if (proc.ExitCode != 0 || !File.Exists(downloadedFile))
-            {
-                MessageBox.Show($"Error downloading video:\n{stderr}");
-                return;
-            }
-
-            // --- Step 5: FFmpeg conversion to target bitrate ---
-            string bitRate = markadianSettings.bitRateSelector; // default 192 kbps
-
-            var conversion = Xabe.FFmpeg.FFmpeg.Conversions.New()
-                .AddParameter($"-i \"{downloadedFile}\" -vn -ar 44100 -b:a {bitRate}k \"{tempFile}\"");
-
-            conversion.OnProgress += (sender, args) =>
-            {
-                progressSongStatus.Invoke((Action)(() =>
-                {
-                    progressSongStatus.Value = Math.Clamp((int)args.Percent, 0, 100);
-                }));
-            };
-
-            await conversion.Start();
-
-            // --- Step 6: Replace original file safely ---
-            if (File.Exists(downloadedFile))
-                File.Delete(downloadedFile);
-
-            File.Move(tempFile, downloadedFile);
-
-            // --- Step 7: Update UI ---
-            MessageBox.Show($"Download complete!\nSaved as: {downloadedFile}");
-            statusText.Text = "Downloaded";
-
-            if (markadianSettings.enableQueue)
-            {
-                songsDownloaded++;
-                statusQueue.Text = $"{songsDownloaded} / {songsEnqueued} Songs Downloaded";
-            }
-        }
-
-        private string MakeSafeFileName(string name)
-        {
-            foreach (char c in Path.GetInvalidFileNameChars())
-                name = name.Replace(c, '_');
-            return name;
-        }
 
 
         private void downloadLocationToolStripMenuItem_Click(object sender, EventArgs e)
@@ -291,30 +153,7 @@ namespace MarkadianPlaylister
         }
 
 
-        private string SanitizeYoutubeUrl(string url)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-                return url;
 
-            Uri uri;
-            if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
-                return url;
-
-            if (uri.Host.Contains("youtu.be"))
-            {
-                // Short link: keep only up to "?"
-                int qIndex = url.IndexOf('?');
-                return qIndex != -1 ? url.Substring(0, qIndex) : url;
-            }
-            else if (uri.Host.Contains("youtube.com"))
-            {
-                // Full link: keep only up to "&"
-                int ampIndex = url.IndexOf('&');
-                return ampIndex != -1 ? url.Substring(0, ampIndex) : url;
-            }
-            MessageBox.Show("now it's" + url);
-            return url;
-        }
 
 
         private void preferencesToolStripMenuItem_Click(object sender, EventArgs e)
@@ -575,11 +414,11 @@ namespace MarkadianPlaylister
 
             try
             {
-                var results = await SearchYouTubeAsync(query);
+                var results = await searchLogic.SearchYoutubeVideosAsync(query);
 
-                foreach (var r in results.Take(5))
+                foreach (var r in results.Take(int.Parse(markadianSettings.searchCount)))
                 {
-                    var card = CreateYoutubeResultCard(r);
+                    var card = searchLogic.CreateYoutubeResultCard(r);
                     youtubeSearchResults.Controls.Add(card);
                 }
             }
@@ -593,198 +432,487 @@ namespace MarkadianPlaylister
             }
         }
 
-
-
-        private Control CreateYoutubeResultCard(YoutubeResult result)
+        private void youtubeSearchTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            var card = new Panel
-            {
-                Width = 320,
-                Height = 160,
-                BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(10),
-                BackColor = Color.FromArgb(45, 45, 48),
-                Cursor = Cursors.Hand
-            };
 
-            var thumbnail = new PictureBox
-            {
-                Width = 150,
-                Height = 110,
-                Location = new Point(8, 8),
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                BorderStyle = BorderStyle.FixedSingle
-            };
+        }
 
-            try
+        private void youtubeSearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
             {
-                using var wc = new WebClient();
-                byte[] imgBytes = wc.DownloadData(result.Thumbnail);
-                using var ms = new MemoryStream(imgBytes);
-                thumbnail.Image = Image.FromStream(ms);
+                case Keys.Enter:
+                    youtubeSearchButton_Click(sender, e);
+                    break;
+
             }
-            catch
+        }
+
+        private void linkText_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
             {
-                thumbnail.BackColor = Color.DarkGray;
+                case Keys.Enter:
+                    downloadButton_Click(sender, e);
+                    break;
+
+            }
+        }
+
+        private void downloadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (downloadToolStripMenuItem.Checked)
+            {
+                downloadToolStripMenuItem.Checked = false;
+                bottomNavigator.Panel1Collapsed = true;
+            }
+            else
+            {
+                downloadToolStripMenuItem.Checked = true;
+                bottomNavigator.Panel1Collapsed = false;
+            }
+        }
+
+        private void youtubeSearchPanelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (youtubeSearchPanelToolStripMenuItem.Checked)
+            {
+                youtubeSearchPanelToolStripMenuItem.Checked = false;
+                splitContainer2.Panel2Collapsed = true;
+            }
+            else
+            {
+                youtubeSearchPanelToolStripMenuItem.Checked = true;
+                splitContainer2.Panel2Collapsed = false;
+
+            }
+        }
+
+        private void metadataPanelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (metadataPanelToolStripMenuItem.Checked)
+            {
+                metadataPanelToolStripMenuItem.Checked = false;
+                splitContainer1.Panel2Collapsed = true;
+            }
+            else
+            {
+
+                metadataPanelToolStripMenuItem.Checked = true;
+                splitContainer1.Panel2Collapsed = false;
+            }
+        }
+
+        private void listPanelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listPanelToolStripMenuItem.Checked)
+            {
+                listPanelToolStripMenuItem.Checked = false;
+                bottomNavigator.Panel2Collapsed = true;
+            }
+            else
+            {
+                listPanelToolStripMenuItem.Checked = true;
+                bottomNavigator.Panel2Collapsed = false;
+            }
+        }
+
+        private void lightToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (lightToolStripMenuItem.Checked)
+            {
+                return;
+            }
+            else
+            {
+                darkToolStripMenuItem.Checked = false;
+                ThemeManager.SetTheme(AppTheme.Light);
+                markadianSettings.theme = "Light";
+                lightToolStripMenuItem.Checked = true;
+                ThemeManager.ApplyTheme(this);
+                SettingsManager.SaveSettings(markadianSettings);
             }
 
-            var titleLabel = new Label
+            
+        }
+
+        private void darkToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (darkToolStripMenuItem.Checked) { return; }
+
+            else
             {
-                Text = result.Title ?? "(No Title)",
-                AutoSize = false,
-                Width = 150,
-                Height = 80,
-                Location = new Point(170, 10),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.Transparent,
-                MaximumSize = new Size(140, 80),
-                AutoEllipsis = true
-            };
-
-            var durationLabel = new Label
-            {
-                Text = result.Duration ?? "Unknown",
-                AutoSize = false,
-                Width = 140,
-                Height = 20,
-                Location = new Point(170, 110),
-                ForeColor = Color.LightGray,
-                Font = new Font("Segoe UI", 8)
-            };
-
-            // Add a reusable tooltip
-            var tooltip = new ToolTip
-            {
-                AutoPopDelay = 3000,
-                InitialDelay = 500,
-                ReshowDelay = 200,
-                BackColor = Color.FromArgb(55, 55, 60),
-                ForeColor = Color.White
-            };
-
-            tooltip.SetToolTip(card, "Click to download");
-            tooltip.SetToolTip(thumbnail, "Click to download");
-            tooltip.SetToolTip(titleLabel, "Click to download");
-            tooltip.SetToolTip(durationLabel, "Click to download");
-
-            // Hover color feedback
-            card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(60, 60, 65);
-            card.MouseLeave += (s, e) => card.BackColor = Color.FromArgb(45, 45, 48);
-
-            card.Controls.Add(thumbnail);
-            card.Controls.Add(titleLabel);
-            card.Controls.Add(durationLabel);
-
-            // Entire card clickable
-            card.Click += async (s, e) => await handleDownloadLogic(result.Url);
-            thumbnail.Click += async (s, e) => await handleDownloadLogic(result.Url);
-            titleLabel.Click += async (s, e) => await handleDownloadLogic(result.Url);
-            durationLabel.Click += async (s, e) => await handleDownloadLogic(result.Url);
-
-            return card;
+                lightToolStripMenuItem.Checked = false;
+                darkToolStripMenuItem.Checked = true;
+                ThemeManager.SetTheme(AppTheme.Dark);
+                markadianSettings.theme = "Dark";
+                ThemeManager.ApplyTheme(this);
+                SettingsManager.SaveSettings(markadianSettings);
+            }
         }
 
 
 
 
-        private async Task<List<YoutubeResult>> SearchYouTubeAsync(string query)
-        {
-            var results = new List<YoutubeResult>();
-            var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
-
-            if (!File.Exists(exePath))
-                throw new FileNotFoundException("yt-dlp executable not found", exePath);
-
-            // Use proper quoting for complex search
-            var psi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = $"ytsearch5:\"{query}\" --print-json --skip-download",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var proc = Process.Start(psi);
-            string output = await proc.StandardOutput.ReadToEndAsync();
-            await proc.WaitForExitAsync();
-
-            if (proc.ExitCode != 0 || string.IsNullOrWhiteSpace(output))
-                throw new Exception("No results found or yt-dlp failed.");
-
-            // Each line is a JSON result
-            foreach (string line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-            {
-                try
-                {
-                    var json = System.Text.Json.JsonDocument.Parse(line).RootElement;
-                    results.Add(new YoutubeResult
-                    {
-                        Title = json.GetProperty("title").GetString(),
-                        Duration = json.TryGetProperty("duration_string", out var d) ? d.GetString() : "Unknown",
-                        Thumbnail = json.TryGetProperty("thumbnail", out var t) ? t.GetString() : "",
-                        Url = json.GetProperty("webpage_url").GetString()
-                    });
-                }
-                catch { /* skip malformed entries */ }
-            }
-
-            return results;
-        }
 
 
+        //public async Task handleDownloadLogic(String videoUrl)
+        //{
+        //    videoUrl = SanitizeYoutubeUrl(videoUrl);
+        //    if (markadianSettings.enableQueue)
+        //    {
 
+        //        videoLinks.Enqueue(videoUrl);
+        //        songsEnqueued++;
+        //        statusQueue.Text = songsDownloaded.ToString() + " / " + songsEnqueued.ToString() + " Songs Downloaded";
+
+        //        if (videoLinks.Count == 1)
+        //        {
+        //            locked = false;
+        //            await startDownloadingWithQueue(videoLinks, filePath);
+        //        }
+        //        return;
+        //    }
+        //    else await DownloadWithYtDlp(videoUrl, filePath);
+        //}
+
+        //private async Task startDownloadingWithQueue(Queue<string> videoLinks, string filePath)
+        //{
+
+
+        //    while (videoLinks.Count > 0)
+        //    {
+        //        if (!locked)
+        //        {
+        //            string currentVideo = videoLinks.Dequeue();
+        //            await DownloadWithYtDlp(currentVideo, filePath);
+        //            locked = true;
+        //        }
+
+        //    }
+        //}
+
+        //private async Task DownloadWithYtDlp(string videoUrl, string folderPath)
+        //{
+        //    progressSongStatus.Value = 0;
+
+        //    // Path to yt-dlp
+        //    string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+        //    if (!File.Exists(exePath))
+        //        throw new FileNotFoundException("yt-dlp executable not found", exePath);
+
+        //    // Validate URL
+        //    bool IsValidYoutubeUrl(string url) =>
+        //        Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+        //        (uri.Host.Contains("youtube.com") || uri.Host.Contains("youtu.be"));
+
+        //    if (!IsValidYoutubeUrl(videoUrl))
+        //    {
+        //        MessageBox.Show("Not a valid YouTube URL");
+        //        return;
+        //    }
+
+        //    // --- Step 1: Get video title ---
+        //    var titlePsi = new ProcessStartInfo
+        //    {
+        //        FileName = exePath,
+        //        Arguments = $"--get-title \"{videoUrl}\"",
+        //        RedirectStandardOutput = true,
+        //        UseShellExecute = false,
+        //        CreateNoWindow = true
+        //    };
+
+        //    using var titleProc = Process.Start(titlePsi);
+        //    string videoTitle = (await titleProc.StandardOutput.ReadToEndAsync()).Trim();
+        //    await titleProc.WaitForExitAsync();
+
+        //    if (string.IsNullOrWhiteSpace(videoTitle))
+        //        videoTitle = "UnknownTitle";
+
+        //    // --- Step 2: Sanitize filename ---
+        //    string MakeSafeFileName(string name)
+        //    {
+        //        foreach (char c in Path.GetInvalidFileNameChars())
+        //            name = name.Replace(c, '_');
+        //        return name;
+        //    }
+
+        //    string safeTitle = MakeSafeFileName(videoTitle);
+
+        //    // --- Step 3: Set output template and target file ---
+        //    string outputTemplate = Path.Combine(folderPath, safeTitle + ".%(ext)s");
+        //    string downloadedFile = Path.Combine(folderPath, safeTitle + ".mp3");
+        //    string tempFile = Path.Combine(folderPath, safeTitle + "_temp.mp3");
+
+        //    // --- Step 4: Download with yt-dlp ---
+        //    var psi = new ProcessStartInfo
+        //    {
+        //        FileName = exePath,
+        //        Arguments = $"-f bestaudio --no-cache-dir --extract-audio --audio-format mp3 " +
+        //                    $"--user-agent \"Mozilla/5.0\" " +
+        //                    $"--ffmpeg-location \"{Path.GetDirectoryName(ffmpeg)}\" " +
+        //                    $"-o \"{outputTemplate}\" \"{videoUrl}\"",
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError = true,
+        //        UseShellExecute = false,
+        //        CreateNoWindow = true
+        //    };
+
+        //    using var proc = Process.Start(psi);
+        //    string stdout = await proc.StandardOutput.ReadToEndAsync();
+        //    string stderr = await proc.StandardError.ReadToEndAsync();
+        //    await proc.WaitForExitAsync();
+
+        //    if (proc.ExitCode != 0 || !File.Exists(downloadedFile))
+        //    {
+        //        MessageBox.Show($"Error downloading video:\n{stderr}");
+        //        return;
+        //    }
+
+        //    // --- Step 5: FFmpeg conversion to target bitrate ---
+        //    string bitRate = markadianSettings.bitRateSelector; // default 192 kbps
+
+        //    var conversion = Xabe.FFmpeg.FFmpeg.Conversions.New()
+        //        .AddParameter($"-i \"{downloadedFile}\" -vn -ar 44100 -b:a {bitRate}k \"{tempFile}\"");
+
+        //    conversion.OnProgress += (sender, args) =>
+        //    {
+        //        progressSongStatus.Invoke((Action)(() =>
+        //        {
+        //            progressSongStatus.Value = Math.Clamp((int)args.Percent, 0, 100);
+        //        }));
+        //    };
+
+        //    await conversion.Start();
+
+        //    // --- Step 6: Replace original file safely ---
+        //    if (File.Exists(downloadedFile))
+        //        File.Delete(downloadedFile);
+
+        //    File.Move(tempFile, downloadedFile);
+
+        //    // --- Step 7: Update UI ---
+        //    MessageBox.Show($"Download complete!\nSaved as: {downloadedFile}");
+        //    statusText.Text = "Downloaded";
+
+        //    if (markadianSettings.enableQueue)
+        //    {
+        //        songsDownloaded++;
+        //        statusQueue.Text = $"{songsDownloaded} / {songsEnqueued} Songs Downloaded";
+        //    }
+        //}
+
+        //private string MakeSafeFileName(string name)
+        //{
+        //    foreach (char c in Path.GetInvalidFileNameChars())
+        //        name = name.Replace(c, '_');
+        //    return name;
+        //}
+
+        //private string SanitizeYoutubeUrl(string url)
+        //{
+        //    if (string.IsNullOrWhiteSpace(url))
+        //        return url;
+
+        //    Uri uri;
+        //    if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
+        //        return url;
+
+        //    if (uri.Host.Contains("youtu.be"))
+        //    {
+        //        // Short link: keep only up to "?"
+        //        int qIndex = url.IndexOf('?');
+        //        return qIndex != -1 ? url.Substring(0, qIndex) : url;
+        //    }
+        //    else if (uri.Host.Contains("youtube.com"))
+        //    {
+        //        // Full link: keep only up to "&"
+        //        int ampIndex = url.IndexOf('&');
+        //        return ampIndex != -1 ? url.Substring(0, ampIndex) : url;
+        //    }
+        //    MessageBox.Show("now it's" + url);
+        //    return url;
+        //}
+
+
+        //private Control CreateYoutubeResultCard(YoutubeResult result)
+        //{
+        //    var card = new Panel
+        //    {
+        //        Width = 320,
+        //        Height = 160,
+        //        BorderStyle = BorderStyle.FixedSingle,
+        //        Margin = new Padding(10),
+        //        BackColor = Color.FromArgb(45, 45, 48),
+        //        Cursor = Cursors.Hand
+        //    };
+
+        //    var thumbnail = new PictureBox
+        //    {
+        //        Width = 150,
+        //        Height = 110,
+        //        Location = new Point(8, 8),
+        //        SizeMode = PictureBoxSizeMode.StretchImage,
+        //        BorderStyle = BorderStyle.FixedSingle
+        //    };
+
+        //    try
+        //    {
+        //        using var wc = new WebClient();
+        //        byte[] imgBytes = wc.DownloadData(result.Thumbnail);
+        //        using var ms = new MemoryStream(imgBytes);
+        //        thumbnail.Image = Image.FromStream(ms);
+        //    }
+        //    catch
+        //    {
+        //        thumbnail.BackColor = Color.DarkGray;
+        //    }
+
+        //    var titleLabel = new Label
+        //    {
+        //        Text = result.Title ?? "(No Title)",
+        //        AutoSize = false,
+        //        Width = 150,
+        //        Height = 80,
+        //        Location = new Point(170, 10),
+        //        ForeColor = Color.White,
+        //        Font = new Font("Segoe UI", 9, FontStyle.Bold),
+        //        BackColor = Color.Transparent,
+        //        MaximumSize = new Size(140, 80),
+        //        AutoEllipsis = true
+        //    };
+
+        //    var durationLabel = new Label
+        //    {
+        //        Text = result.Duration ?? "Unknown",
+        //        AutoSize = false,
+        //        Width = 140,
+        //        Height = 20,
+        //        Location = new Point(170, 110),
+        //        ForeColor = Color.LightGray,
+        //        Font = new Font("Segoe UI", 8)
+        //    };
+
+        //    // Add a reusable tooltip
+        //    var tooltip = new ToolTip
+        //    {
+        //        AutoPopDelay = 3000,
+        //        InitialDelay = 500,
+        //        ReshowDelay = 200,
+        //        BackColor = Color.FromArgb(55, 55, 60),
+        //        ForeColor = Color.White
+        //    };
+
+        //    tooltip.SetToolTip(card, "Click to download");
+        //    tooltip.SetToolTip(thumbnail, "Click to download");
+        //    tooltip.SetToolTip(titleLabel, "Click to download");
+        //    tooltip.SetToolTip(durationLabel, "Click to download");
+
+        //    // Hover color feedback
+        //    card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(60, 60, 65);
+        //    card.MouseLeave += (s, e) => card.BackColor = Color.FromArgb(45, 45, 48);
+
+        //    card.Controls.Add(thumbnail);
+        //    card.Controls.Add(titleLabel);
+        //    card.Controls.Add(durationLabel);
+
+        //    // Entire card clickable
+        //    card.Click += async (s, e) => await handleDownloadLogic(result.Url);
+        //    thumbnail.Click += async (s, e) => await handleDownloadLogic(result.Url);
+        //    titleLabel.Click += async (s, e) => await handleDownloadLogic(result.Url);
+        //    durationLabel.Click += async (s, e) => await handleDownloadLogic(result.Url);
+
+        //    return card;
+        //}
+
+
+
+        //private static readonly YoutubeClient youtubeClient = new YoutubeClient();
+
+        //private async Task<List<YoutubeResult>> SearchYoutubeVideosAsync(string query)
+        //{
+        //    if (string.IsNullOrWhiteSpace(query))
+        //        return new List<YoutubeResult>();
+
+        //    try
+        //    {
+        //        var results = await youtubeClient.Search.GetVideosAsync(query).CollectAsync(5);
+
+        //        return results.Select(v => new YoutubeResult
+        //        {
+        //            Title = v.Title,
+        //            Duration = v.Duration?.ToString(@"mm\:ss") ?? "Unknown",
+        //            Thumbnail = v.Thumbnails?.GetWithHighestResolution()?.Url ?? "",
+        //            Url = v.Url
+        //        }).ToList();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Search failed: {ex.Message}");
+        //        return new List<YoutubeResult>();
+        //    }
+        //}
+
+
+        //private async Task<List<YoutubeResult>> SearchYouTubeAsyncYTDLP(string query)
+        //{
+        //    var results = new List<YoutubeResult>();
+        //    string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+        //    if (!File.Exists(exePath))
+        //        throw new FileNotFoundException("yt-dlp executable not found", exePath);
+
+        //    var psi = new ProcessStartInfo
+        //    {
+        //        FileName = exePath,
+        //        Arguments = $"ytsearch5:\"{query}\" --dump-json --no-warnings --no-playlist --skip-download",
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError = true,
+        //        UseShellExecute = false,
+        //        CreateNoWindow = true
+        //    };
+
+        //    using (var proc = Process.Start(psi))
+        //    {
+        //        using (var reader = proc.StandardOutput)
+        //        {
+        //            while (!reader.EndOfStream && results.Count < 5)
+        //            {
+        //                var line = await reader.ReadLineAsync();
+        //                if (string.IsNullOrWhiteSpace(line))
+        //                    continue;
+
+        //                try
+        //                {
+        //                    var json = System.Text.Json.JsonDocument.Parse(line).RootElement;
+        //                    results.Add(new YoutubeResult
+        //                    {
+        //                        Title = json.GetProperty("title").GetString() ?? "",
+        //                        Duration = json.TryGetProperty("duration_string", out var d) ? d.GetString() ?? "" : "",
+        //                        Thumbnail = json.TryGetProperty("thumbnail", out var t) ? t.GetString() ?? "" : "",
+        //                        Url = json.GetProperty("webpage_url").GetString() ?? ""
+        //                    });
+        //                }
+        //                catch
+        //                {
+        //                    // skip bad line
+        //                }
+        //            }
+        //        }
+        //        await proc.WaitForExitAsync();
+        //    }
+
+        //    return results;
+        //}
     }
 
 
-    public class MarkadianSettings
-    {
-        [JsonPropertyName("bitRate")]
-        public String bitRateSelector { get; set; }
-
-        [JsonPropertyName("filePath")]
-        public String filePath { get; set; }
-        [JsonPropertyName("enableQueue")]
-        public bool enableQueue { get; set; }
-
-    }
 
 
-    public static class SettingsManager
-    {
-        private static readonly string settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
 
-        public static MarkadianSettings LoadSettings()
-        {
-            if (!File.Exists(settingsFilePath))
-            {
-                // Create default settings file
-                var defaultSettings = new MarkadianSettings();
-                defaultSettings.bitRateSelector = "192";
-                defaultSettings.filePath = AppDomain.CurrentDomain.BaseDirectory;
-                defaultSettings.enableQueue = true;
-                SaveSettings(defaultSettings);
-                return defaultSettings;
-            }
 
-            string json = File.ReadAllText(settingsFilePath);
-            return JsonSerializer.Deserialize<MarkadianSettings>(json) ?? new MarkadianSettings();
-        }
 
-        public static void SaveSettings(MarkadianSettings settings)
-        {
-            string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(settingsFilePath, json);
-        }
-    }
 
-    public class YoutubeResult
-    {
-        public string Title { get; set; }
-        public string Duration { get; set; }
-        public string Thumbnail { get; set; }
-        public string Url { get; set; }
-    }
+
+
 
 }

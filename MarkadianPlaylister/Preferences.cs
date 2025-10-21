@@ -30,6 +30,7 @@ namespace MarkadianPlaylister
             settings.bitRateSelector = bitRateSelector.Text;
             settings.enableQueue = enableQueue.Checked;
             settings.filePath = filePath;
+            settings.searchCount = countNumber.Value.ToString();
             SettingsManager.SaveSettings(settings);
             this.Close();
 
@@ -37,10 +38,13 @@ namespace MarkadianPlaylister
 
         private void Preferences_Load(object sender, EventArgs e)
         {
+            ThemeManager.SetTheme(settings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
+            ThemeManager.ApplyTheme(this);
             filePath = settings.filePath;
             bitRateSelector.Text = settings.bitRateSelector;
             pathDisplay.Text = "Current Path:" + settings.filePath;
             enableQueue.Checked = settings.enableQueue;
+            countNumber.Value = int.Parse(settings.searchCount);
         }
 
         private void button3_Click(object sender, EventArgs e)
