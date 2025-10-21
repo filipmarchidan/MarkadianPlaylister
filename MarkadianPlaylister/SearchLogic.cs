@@ -32,20 +32,9 @@ namespace MarkadianPlaylister
                 Height = 110,
                 Location = new Point(8, 8),
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.DarkGray // placeholder color
             };
-
-            try
-            {
-                using var wc = new WebClient();
-                byte[] imgBytes = wc.DownloadData(result.Thumbnail);
-                using var ms = new MemoryStream(imgBytes);
-                thumbnail.Image = Image.FromStream(ms);
-            }
-            catch
-            {
-                thumbnail.BackColor = Color.DarkGray;
-            }
 
             var titleLabel = new Label
             {
@@ -72,7 +61,7 @@ namespace MarkadianPlaylister
                 Font = new Font("Segoe UI", 8)
             };
 
-            // Add a reusable tooltip
+            // Tooltip
             var tooltip = new ToolTip
             {
                 AutoPopDelay = 3000,
@@ -87,22 +76,70 @@ namespace MarkadianPlaylister
             tooltip.SetToolTip(titleLabel, "Click to download");
             tooltip.SetToolTip(durationLabel, "Click to download");
 
-            // Hover color feedback
+            // Hover feedback
             card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(60, 60, 65);
             card.MouseLeave += (s, e) => card.BackColor = Color.FromArgb(45, 45, 48);
 
+            // Add controls
             card.Controls.Add(thumbnail);
             card.Controls.Add(titleLabel);
             card.Controls.Add(durationLabel);
 
-            // Entire card clickable
-            card.Click += async (s, e) => await downloadLogic.handleDownloadLogic(result.Url);
-            thumbnail.Click += async (s, e) => await downloadLogic.handleDownloadLogic(result.Url);
-            titleLabel.Click += async (s, e) => await downloadLogic.handleDownloadLogic(result.Url);
-            durationLabel.Click += async (s, e) => await downloadLogic.handleDownloadLogic(result.Url);
+            // --- ✅ Fixed Async Image Loading ---
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(result.Thumbnail))
+                        return;
+
+                    using var handler = new HttpClientHandler
+                    {
+                        AllowAutoRedirect = true,
+                        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+                    };
+
+                    using var http = new HttpClient(handler);
+                    http.Timeout = TimeSpan.FromSeconds(10);
+
+                    var imgBytes = await http.GetByteArrayAsync(result.Thumbnail);
+
+                    using var ms = new MemoryStream(imgBytes);
+                    var img = Image.FromStream(ms);
+
+                    // Ensure UI-thread update
+                    if (thumbnail.InvokeRequired)
+                        thumbnail.Invoke(() => thumbnail.Image = img);
+                    else
+                        thumbnail.Image = img;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Thumbnail Error] {ex.Message}");
+                }
+            });
+
+            // --- ✅ Click Handling ---
+            async Task HandleDownloadAsync()
+            {
+                try
+                {
+                    await downloadLogic.handleDownloadLogic(result.Url);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Download error: {ex.Message}");
+                }
+            }
+
+            card.Click += async (s, e) => await HandleDownloadAsync();
+            thumbnail.Click += async (s, e) => await HandleDownloadAsync();
+            titleLabel.Click += async (s, e) => await HandleDownloadAsync();
+            durationLabel.Click += async (s, e) => await HandleDownloadAsync();
 
             return card;
         }
+
 
 
 
