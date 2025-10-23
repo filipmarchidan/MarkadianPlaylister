@@ -6,20 +6,40 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <PackageIcon>LOGO_OFFICIAL_WHITE_SMALL.png</PackageIcon>
+    <PackageIcon>Markadian Icon.ico</PackageIcon>
     <AssemblyVersion>1.0.0</AssemblyVersion>
+	<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <Copyright>Markadian Records</Copyright>
+    <FileVersion>1.0.1</FileVersion>
+	<DebugType>none</DebugType>
+	<Optimize>true</Optimize>
+    <Title>Markadian Playlister</Title>
+	<UseWindowsForms>true</UseWindowsForms>
+	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+	<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ApplicationIcon>Markadian Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="LOGO_OFFICIAL_WHITE_SMALL - Copy.ico" />
+    <Content Include="Markadian Icon.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="D:\Filip's Site Resources\LOGOS\LOGO_OFFICIAL_WHITE_SMALL.png">
+    <None Include="D:\Filip's Site Resources\LOGOS\Markadian Icon.ico">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+
+	<ItemGroup>
+		<TrimmerRootAssembly Include="TagLibSharp" />
+		<TrimmerRootAssembly Include="Xabe.FFmpeg" />
+		<TrimmerRootAssembly Include="YoutubeExplode" />
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />

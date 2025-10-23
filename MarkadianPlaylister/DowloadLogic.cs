@@ -14,14 +14,14 @@ namespace MarkadianPlaylister
        
 
         public MarkadianSettings markadianSettings;
-        
+       
         public static string filePath;
         public bool locked;
         public static int songsDownloaded { get; set; }
         public static int songsEnqueued { get; set; }
-        public static string exePath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+        public static string exePath { get; set; } = ResourceManager.GetYtDlp();
 
-        string ffmpeg { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+        string ffmpeg { get; set; } = ResourceManager.GetFfmpeg();
 
         Queue<string> videoLinks = new Queue<string>();
 

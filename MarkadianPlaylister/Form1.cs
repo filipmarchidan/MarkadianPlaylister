@@ -34,7 +34,7 @@ namespace MarkadianPlaylister
         {
             InitializeComponent();
 
-
+            checkUpdates();
 
             searchLogic.downloadLogic.ProgressChanged += (value) =>
             {
@@ -66,8 +66,13 @@ namespace MarkadianPlaylister
 
         }
 
+        public static async void checkUpdates() {
+            await ResourceUpdater.CheckForUpdatesAsync();
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            
             listViewSongs.Items.Clear();
             markadianSettings = SettingsManager.LoadSettings();
             ThemeManager.SetTheme(markadianSettings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
