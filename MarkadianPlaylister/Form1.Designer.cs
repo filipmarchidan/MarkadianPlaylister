@@ -48,6 +48,9 @@
             toolsToolStripMenuItem = new ToolStripMenuItem();
             enableAutomaticUpdatesToolStripMenuItem = new ToolStripMenuItem();
             enabToolStripMenuItem = new ToolStripMenuItem();
+            helpToolStripMenuItem = new ToolStripMenuItem();
+            discordServerToolStripMenuItem = new ToolStripMenuItem();
+            aboutToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
             bottomNavigator = new SplitContainer();
@@ -118,7 +121,7 @@
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem, toolsToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem, toolsToolStripMenuItem, helpToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Padding = new Padding(8, 2, 0, 2);
@@ -261,6 +264,27 @@
             enabToolStripMenuItem.Text = "Drag and Drop Files";
             enabToolStripMenuItem.Click += enabToolStripMenuItem_Click;
             // 
+            // helpToolStripMenuItem
+            // 
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { discordServerToolStripMenuItem, aboutToolStripMenuItem });
+            helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            helpToolStripMenuItem.Size = new Size(65, 29);
+            helpToolStripMenuItem.Text = "Help";
+            // 
+            // discordServerToolStripMenuItem
+            // 
+            discordServerToolStripMenuItem.Name = "discordServerToolStripMenuItem";
+            discordServerToolStripMenuItem.Size = new Size(229, 34);
+            discordServerToolStripMenuItem.Text = "Discord Server";
+            discordServerToolStripMenuItem.Click += discordServerToolStripMenuItem_Click;
+            // 
+            // aboutToolStripMenuItem
+            // 
+            aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            aboutToolStripMenuItem.Size = new Size(229, 34);
+            aboutToolStripMenuItem.Text = "About";
+            aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
+            // 
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
@@ -276,6 +300,9 @@
             // 
             splitContainer1.Panel2.Controls.Add(panel1);
             splitContainer1.Panel2.Controls.Add(tableLayoutPanel2);
+            splitContainer1.Panel2.DragDrop += splitContainer1_Panel2_DragDrop;
+            splitContainer1.Panel2.DragEnter += splitContainer1_Panel2_DragEnter;
+            splitContainer1.Panel2.DragLeave += splitContainer1_Panel2_DragLeave;
             splitContainer1.Panel2.Paint += splitContainer1_Panel2_Paint;
             splitContainer1.Size = new Size(1836, 777);
             splitContainer1.SplitterDistance = 1351;
@@ -453,7 +480,9 @@
             listViewSongs.View = View.Details;
             listViewSongs.ItemSelectionChanged += listViewSongs_ItemSelectionChanged;
             listViewSongs.SelectedIndexChanged += listViewSongs_SelectedIndexChanged_1;
+            listViewSongs.DragDrop += listViewSongs_DragDrop;
             listViewSongs.DragEnter += listViewSongs_DragEnter;
+            listViewSongs.DragLeave += listViewSongs_DragLeave;
             // 
             // titleSongList
             // 
@@ -896,5 +925,8 @@
         private ToolStripMenuItem enableAutomaticUpdatesToolStripMenuItem;
         private ToolStripMenuItem enabToolStripMenuItem;
         private ToolStripMenuItem rescanAudioToolStripMenuItem;
+        private ToolStripMenuItem helpToolStripMenuItem;
+        private ToolStripMenuItem discordServerToolStripMenuItem;
+        private ToolStripMenuItem aboutToolStripMenuItem;
     }
 }

@@ -87,7 +87,7 @@ namespace MarkadianPlaylister
             pathDisplay.Text = filePath.ToString();
             songsDownloaded = 0;
             songsEnqueued = 0;
-            listViewSongs.AllowDrop = true;
+
             splitContainer1.Panel2.AllowDrop = true;
             if (!markadianSettings.enableQueue)
             {
@@ -97,7 +97,7 @@ namespace MarkadianPlaylister
 
             if (markadianSettings.enableUpdates)
             {
-                
+
                 enableAutomaticUpdatesToolStripMenuItem.Checked = true;
             }
             else
@@ -113,7 +113,16 @@ namespace MarkadianPlaylister
             checkUpdates();
             indexAudio(filePath);
 
-
+            if (markadianSettings.enableDragDrop)
+            {
+                listViewSongs.AllowDrop = true;
+                splitContainer1.Panel2.AllowDrop = true;
+            }
+            else
+            {
+                listViewSongs.AllowDrop = false;
+                splitContainer1.Panel2.AllowDrop = false;
+            }
 
         }
 
@@ -616,6 +625,46 @@ namespace MarkadianPlaylister
             });
 
             e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
+
+            listViewSongs.BackColor = Color.FromArgb(60, 60, 65);
+        }
+
+
+        private void listViewSongs_DragDrop(object sender, DragEventArgs e)
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+
+            foreach (var file in files)
+            {
+                try
+                {
+                    int bitRate = 0;
+                    string title = Path.GetFileNameWithoutExtension(file);
+                    var item = new ListViewItem(title);
+
+                    using (var tfile = TagLib.File.Create(file))
+                    {
+                        bitRate = tfile.Properties.AudioBitrate;
+                        TimeSpan duration = tfile.Properties.Duration;
+
+
+                        item.SubItems.Add(bitRate.ToString());
+                        item.SubItems.Add(duration.ToString(@"mm\:ss"));
+                        item.Tag = file;
+
+                        listViewSongs.Items.Add(item);
+                        //listViewSongs.Items[0].Selected = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Failed to load file:\n{Path.GetFileName(file)}\n\n{ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
         }
 
         private void enableAutomaticUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
@@ -624,11 +673,15 @@ namespace MarkadianPlaylister
             {
                 enableAutomaticUpdatesToolStripMenuItem.Checked = false;
                 markadianSettings.enableUpdates = false;
+                listViewSongs.AllowDrop = false;
+                splitContainer1.Panel2.AllowDrop = false;
             }
             else
             {
                 enableAutomaticUpdatesToolStripMenuItem.Checked = true;
                 markadianSettings.enableUpdates = true;
+                listViewSongs.AllowDrop = true;
+                splitContainer1.Panel2.AllowDrop = true;
             }
         }
 
@@ -653,9 +706,93 @@ namespace MarkadianPlaylister
 
         private void rescanAudioToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            
+
             indexAudio(filePath);
         }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("This app has been created by Markadian. This app is open source. Any donation is highly appreciated.");
+        }
+
+        private void discordServerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var uri = "https://discord.gg/GeGanQaZ";
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                UseShellExecute = true,
+                FileName = uri
+            };
+            System.Diagnostics.Process.Start(psi);
+        }
+
+        private void splitContainer1_Panel2_DragDrop(object sender, DragEventArgs e)
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+            foreach (var file in files)
+            {
+                try
+                {
+                    int bitRate = 0;
+                    string title = Path.GetFileNameWithoutExtension(file);
+                    var item = new ListViewItem(title);
+
+                    using (var tfile = TagLib.File.Create(file))
+                    {
+                        bitRate = tfile.Properties.AudioBitrate;
+                        TimeSpan duration = tfile.Properties.Duration;
+
+
+                        item.SubItems.Add(bitRate.ToString());
+                        item.SubItems.Add(duration.ToString(@"mm\:ss"));
+                        item.Tag = file;
+
+                        listViewSongs.Items.Add(item);
+                        listViewSongs.Items[listViewSongs.Items.Count - 1].Selected = true;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Failed to load file:\n{Path.GetFileName(file)}\n\n{ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void splitContainer1_Panel2_DragEnter(object sender, DragEventArgs e)
+        {
+            tableLayoutPanel2.BackColor = Color.FromArgb(60, 60, 65);
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+
+            bool valid = files.All(f =>
+                File.Exists(f) &&
+                (f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
+                 f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)));
+
+            e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
+        }
+
+        private void listViewSongs_DragLeave(object sender, EventArgs e)
+        {
+            listViewSongs.BackColor = DefaultBackColor;
+        }
+
+        private void splitContainer1_Panel2_DragLeave(object sender, EventArgs e)
+        {
+            tableLayoutPanel2.BackColor = DefaultBackColor;
+        }
+
+
 
 
 
