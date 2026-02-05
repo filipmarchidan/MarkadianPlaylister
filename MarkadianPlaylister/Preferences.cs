@@ -14,11 +14,12 @@ namespace MarkadianPlaylister
     {
         MarkadianSettings settings;
         public String filePath;
+        public String resourceDirectory;
         public Preferences(MarkadianSettings markadianSettings)
         {
             InitializeComponent();
             settings = markadianSettings;
-            checkBox1.Text = "Enable Updates";
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -31,8 +32,8 @@ namespace MarkadianPlaylister
             settings.bitRateSelector = bitRateSelector.Text;
             settings.enableQueue = enableQueue.Checked;
             settings.filePath = filePath;
+            settings.resourceDirectory = resourceDirectory;
             settings.searchCount = countNumber.Value.ToString();
-            settings.enableUpdates = checkBox1.Checked;
             SettingsManager.SaveSettings(settings);
             this.Close();
 
@@ -46,8 +47,8 @@ namespace MarkadianPlaylister
             bitRateSelector.Text = settings.bitRateSelector;
             pathDisplay.Text = "Current Path:" + settings.filePath;
             enableQueue.Checked = settings.enableQueue;
-            checkBox1.Checked = settings.enableUpdates;
             countNumber.Value = int.Parse(settings.searchCount);
+            resourceDirectoryPath.Text = "Resource Directory: " + settings.resourceDirectory;
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -58,6 +59,18 @@ namespace MarkadianPlaylister
                 filePath = folderBrowserDialog1.SelectedPath;
                 pathDisplay.Text = filePath.ToString();
                 settings.filePath = filePath;
+            }
+            else { MessageBox.Show("Not a valid path"); }
+        }
+
+        private void button2_Click_1(object sender, EventArgs e)
+        {
+            folderBrowserDialog1.Description = "Select a new location for your music";
+            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+            {
+                resourceDirectory = folderBrowserDialog1.SelectedPath;
+                pathDisplay.Text = filePath.ToString();
+                settings.resourceDirectory = filePath;
             }
             else { MessageBox.Show("Not a valid path"); }
         }

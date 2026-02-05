@@ -35,7 +35,7 @@ namespace MarkadianPlaylister
             InitializeComponent();
             ResourceManager.EnsureAllExtracted();
 
-           
+
             searchLogic.downloadLogic.ProgressChanged += (value) =>
             {
                 if (progressSongStatus.InvokeRequired)
@@ -73,7 +73,7 @@ namespace MarkadianPlaylister
 
         public static async void checkUpdates()
         {
-            await ResourceUpdater.CheckForUpdatesAsync();
+            await ResourceUpdater.EnsureResourcesAsync();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -97,16 +97,29 @@ namespace MarkadianPlaylister
 
             if (markadianSettings.enableUpdates)
             {
-                checkUpdates();
+                
+                enableAutomaticUpdatesToolStripMenuItem.Checked = true;
+            }
+            else
+            {
+                enableAutomaticUpdatesToolStripMenuItem.Checked = false;
             }
 
+            if (markadianSettings.enableDragDrop)
+            {
+                enabToolStripMenuItem.Checked = true;
+            }
+            else enabToolStripMenuItem.Checked = false;
+            checkUpdates();
             indexAudio(filePath);
+
 
 
         }
 
         public async void indexAudio(String filePath)
         {
+            listViewSongs.Items.Clear();
             var files = Directory.GetFiles(filePath, "*.*")
                        .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
                                 || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
@@ -603,6 +616,45 @@ namespace MarkadianPlaylister
             });
 
             e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
+        }
+
+        private void enableAutomaticUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (enableAutomaticUpdatesToolStripMenuItem.Checked)
+            {
+                enableAutomaticUpdatesToolStripMenuItem.Checked = false;
+                markadianSettings.enableUpdates = false;
+            }
+            else
+            {
+                enableAutomaticUpdatesToolStripMenuItem.Checked = true;
+                markadianSettings.enableUpdates = true;
+            }
+        }
+
+        private void enabToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (enabToolStripMenuItem.Checked)
+            {
+                enabToolStripMenuItem.Checked = false;
+                markadianSettings.enableDragDrop = false;
+            }
+            else
+            {
+                enabToolStripMenuItem.Checked = true;
+                markadianSettings.enableDragDrop = true;
+            }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            SettingsManager.SaveSettings(markadianSettings);
+        }
+
+        private void rescanAudioToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            
+            indexAudio(filePath);
         }
 
 

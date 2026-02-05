@@ -12,168 +12,116 @@ namespace MarkadianPlaylister
 {
     public static class ResourceUpdater
     {
+        private const string YTDLP_API =
+            "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
 
+        private const string YTDLP_DOWNLOAD =
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
+
+        private const string FFMPEG_DOWNLOAD =
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
 
         private static readonly string TempDir =
             Path.Combine(Path.GetTempPath(), "MarkadianUpdater");
 
-        private static readonly string RealAppDir =
-    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin");
 
-        private static readonly string YtDlpPath =
-            Path.Combine(RealAppDir, "yt-dlp.exe");
-
-        private static readonly string FfmpegPath =
-            Path.Combine(RealAppDir, "ffmpeg.exe");
-
-
-        private const string APP_REPO = "filipmarchidan/MarkadianPlaylister";
-
-        public static async Task CheckForUpdatesAsync()
+        private static bool enableUpdates;
+        public static async Task EnsureResourcesAsync()
         {
-            try
-            {
-                Directory.CreateDirectory(TempDir);
+            var settings = SettingsManager.LoadSettings();
+            string resourceDir = settings.resourceDirectory;
 
-                await CheckAppUpdateAsync();
-                await CheckYtDlpAsync();
-                await CheckFfmpegAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("[Updater] Fatal error: " + ex);
-            }
+            Directory.CreateDirectory(resourceDir);
+            Directory.CreateDirectory(TempDir);
 
-            
-
+            string ytPath = Path.Combine(resourceDir, "yt-dlp.exe");
+            string ffmpegPath = Path.Combine(resourceDir, "ffmpeg.exe");
+            enableUpdates = settings.enableUpdates;
+            await EnsureYtDlpAsync(ytPath);
+            await EnsureFfmpegAsync(ffmpegPath);
         }
 
-        // ================= APP UPDATE =================
+        // ================= YT-DLP =================
 
-        private static async Task CheckAppUpdateAsync()
+        private static async Task EnsureYtDlpAsync(string ytPath)
         {
-            string latest = await GetLatestGitHubTagAsync(
-                $"https://api.github.com/repos/{APP_REPO}/releases/latest");
+            if (!File.Exists(ytPath))
+            {
+                await DownloadFileAsync(YTDLP_DOWNLOAD, ytPath);
+                MessageBox.Show("Dependency yt-dlp not found. It will be downloaded now");
+                return;
+            }
+
+            string local = await GetLocalYtDlpVersionAsync(ytPath);
+            string latest = await GetLatestGitHubTagAsync(YTDLP_API);
 
             if (string.IsNullOrWhiteSpace(latest))
                 return;
 
-            string local = Application.ProductVersion;
-
-            if (!VersionsEqual(local, latest))
+            if (Normalize(local) != Normalize(latest) && enableUpdates)
             {
-                var res = MessageBox.Show(
-                    $"A new version is available.\n\nCurrent: {local}\nLatest: {latest}\n\nOpen download page?",
-                    "Update Available - Markadian Playlister",
+                var result = MessageBox.Show(
+                    $"yt-dlp update available.\n\nCurrent: {local}\nLatest: {latest}\n\nUpdate now?",
+                    "yt-dlp Update",
                     MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Information);
+                    MessageBoxIcon.Question);
 
-                if (res == DialogResult.Yes)
+                if (result == DialogResult.Yes)
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = $"https://github.com/{APP_REPO}/releases/latest",
-                        UseShellExecute = true
-                    });
+                    string tempFile = Path.Combine(TempDir, "yt-dlp.exe");
+                    await DownloadFileAsync(YTDLP_DOWNLOAD, tempFile);
+
+                    ReplaceFile(tempFile, ytPath);
                 }
             }
         }
 
-        // ================= YT-DLP UPDATE =================
-
-        private static async Task CheckYtDlpAsync()
+        private static async Task<string> GetLocalYtDlpVersionAsync(string ytPath)
         {
-            string latest = await GetLatestGitHubTagAsync(
-                "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest");
-
-            if (string.IsNullOrWhiteSpace(latest))
-                return;
-
-            string local = await GetLocalYtDlpVersionAsync();
-
-            if (VersionsEqual(local, latest))
-                return;
-
-            var res = MessageBox.Show(
-                $"yt-dlp update available.\n\nCurrent: {local}\nLatest: {latest}\n\nUpdate now?",
-                "Update Available - yt-dlp",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (res != DialogResult.Yes)
-                return;
-
-            string tempFile = Path.Combine(TempDir, "yt-dlp.exe");
-
-            await DownloadFileAsync(
-                "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
-                tempFile);
-
-            ReplaceFile(tempFile, YtDlpPath);
-
-            string newVersion = await GetLocalYtDlpVersionAsync();
-
-            if (VersionsEqual(newVersion, latest))
+            try
             {
-                MessageBox.Show("yt-dlp updated successfully.",
-                    "Update Complete",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-            }
-            else
-            {
-                MessageBox.Show("yt-dlp update failed.",
-                    "Update Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+                var psi = new ProcessStartInfo
+                {
+                    FileName = ytPath,
+                    Arguments = "--version",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
 
-            Debug.WriteLine("New version after update: " + newVersion);
+                using var proc = Process.Start(psi);
+                string output = await proc.StandardOutput.ReadToEndAsync();
+                await proc.WaitForExitAsync();
+                return output.Trim();
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
-        // ================= FFMPEG UPDATE =================
+        // ================= FFMPEG =================
 
-        private static async Task CheckFfmpegAsync()
+        private static async Task EnsureFfmpegAsync(string ffmpegPath)
         {
-            var res = MessageBox.Show(
-                "Check for FFmpeg update?",
-                "FFmpeg Update",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (res != DialogResult.Yes)
+            if (File.Exists(ffmpegPath))
                 return;
 
+            MessageBox.Show("Dependency ffmpeg not found. It will be downloaded now");
             string zipPath = Path.Combine(TempDir, "ffmpeg.zip");
-
-            await DownloadFileAsync(
-                "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
-                zipPath);
+            await DownloadFileAsync(FFMPEG_DOWNLOAD, zipPath);
 
             using var zip = ZipFile.OpenRead(zipPath);
 
             var entry = zip.Entries
                 .FirstOrDefault(e =>
-                    e.FullName.EndsWith("ffmpeg.exe", StringComparison.OrdinalIgnoreCase));
+                    e.FullName.EndsWith("ffmpeg.exe",
+                        StringComparison.OrdinalIgnoreCase));
 
             if (entry == null)
-            {
-                MessageBox.Show("ffmpeg.exe not found in archive.",
-                    "Update Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                return;
-            }
+                throw new Exception("ffmpeg.exe not found in archive.");
 
-            string tempExe = Path.Combine(TempDir, "ffmpeg.exe");
-            entry.ExtractToFile(tempExe, true);
-
-            ReplaceFile(tempExe, FfmpegPath);
-
-            MessageBox.Show("FFmpeg updated successfully.",
-                "Update Complete",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            entry.ExtractToFile(ffmpegPath, true);
         }
 
         // ================= HELPERS =================
@@ -188,40 +136,11 @@ namespace MarkadianPlaylister
                 string json = await client.GetStringAsync(apiUrl);
                 using var doc = JsonDocument.Parse(json);
 
-                return NormalizeVersion(
-                    doc.RootElement.GetProperty("tag_name").GetString());
+                return doc.RootElement.GetProperty("tag_name").GetString() ?? "";
             }
             catch
             {
                 return "";
-            }
-        }
-
-        private static async Task<string> GetLocalYtDlpVersionAsync()
-        {
-            try
-            {
-                if (!File.Exists(YtDlpPath))
-                    return "none";
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = YtDlpPath,
-                    Arguments = "--version",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var proc = Process.Start(psi);
-                string output = await proc.StandardOutput.ReadToEndAsync();
-                await proc.WaitForExitAsync();
-
-                return NormalizeVersion(output.Trim());
-            }
-            catch
-            {
-                return "unknown";
             }
         }
 
@@ -237,33 +156,15 @@ namespace MarkadianPlaylister
 
         private static void ReplaceFile(string source, string target)
         {
-            try
-            {
-                if (File.Exists(target))
-                    File.Delete(target);
+            if (File.Exists(target))
+                File.Delete(target);
 
-                File.Move(source, target);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to replace file:\n{ex.Message}",
-                    "Update Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            File.Move(source, target);
         }
 
-        private static string NormalizeVersion(string? version)
+        private static string Normalize(string version)
         {
-            if (string.IsNullOrWhiteSpace(version))
-                return "";
-
             return version.Trim().TrimStart('v', 'V');
-        }
-
-        private static bool VersionsEqual(string v1, string v2)
-        {
-            return NormalizeVersion(v1) == NormalizeVersion(v2);
         }
     }
 }

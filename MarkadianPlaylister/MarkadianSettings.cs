@@ -26,5 +26,12 @@ namespace MarkadianPlaylister
 
         [JsonPropertyName("enableUpdates")]
         public bool enableUpdates { get; set; }
+
+        [JsonPropertyName("enableDragDrop")]
+        public bool enableDragDrop { get; set; }
+
+
+        [JsonPropertyName("resourceDirectory")]
+        public String resourceDirectory { get; set; }
     }
 }

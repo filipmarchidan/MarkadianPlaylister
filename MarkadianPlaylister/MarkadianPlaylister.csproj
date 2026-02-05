@@ -23,7 +23,7 @@
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
-		<InvariantGlobalization>true</InvariantGlobalization>
+		<InvariantGlobalization>false</InvariantGlobalization>
 		<TieredCompilation>false</TieredCompilation>
 	</PropertyGroup>
 
@@ -60,6 +60,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -78,6 +83,10 @@
     </None>
     <None Update="ffprobe.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <None Update="yt-dlp.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

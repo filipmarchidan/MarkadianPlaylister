@@ -21,9 +21,9 @@ namespace MarkadianPlaylister
         public static int songsEnqueued { get; set; }
 
         string rbin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin");
-        public static string exePath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+        public static string exePath { get; set; }
 
-        string ffmpeg { get; set; } = ResourceManager.Extract("ffmpeg.exe", ResourceDll.GetYtDlp());
+        string ffmpeg { get; set; }
 
        // string ffprobe { get; set; } = ResourceManager.Extract("ffprobe.exe", ResourceDll.GetFfprobe());
 
@@ -44,6 +44,10 @@ namespace MarkadianPlaylister
             songsDownloaded = 0;
             songsEnqueued = 0;
             filePath = markadianSettings.filePath;
+
+            exePath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
+            ffmpeg = Path.Combine(markadianSettings.resourceDirectory, "ffmpeg.exe");
+
             // Only extract if missing
             if (!File.Exists(exePath))
                 exePath = ResourceManager.Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
@@ -308,6 +312,10 @@ namespace MarkadianPlaylister
             StatusChanged?.Invoke("Downloaded");
             ProgressChanged?.Invoke(100);
             DownloadCompleted?.Invoke(downloadedFilePath);
+
+            Form1 tempForm = (Form1)Application.OpenForms["Form1"];
+          //  tempForm.lis
+            tempForm.indexAudio(filePath);
         }
 
 
