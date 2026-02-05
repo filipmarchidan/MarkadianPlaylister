@@ -18,6 +18,7 @@ namespace MarkadianPlaylister
         {
             InitializeComponent();
             settings = markadianSettings;
+            checkBox1.Text = "Enable Updates";
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -31,6 +32,7 @@ namespace MarkadianPlaylister
             settings.enableQueue = enableQueue.Checked;
             settings.filePath = filePath;
             settings.searchCount = countNumber.Value.ToString();
+            settings.enableUpdates = checkBox1.Checked;
             SettingsManager.SaveSettings(settings);
             this.Close();
 
@@ -44,6 +46,7 @@ namespace MarkadianPlaylister
             bitRateSelector.Text = settings.bitRateSelector;
             pathDisplay.Text = "Current Path:" + settings.filePath;
             enableQueue.Checked = settings.enableQueue;
+            checkBox1.Checked = settings.enableUpdates;
             countNumber.Value = int.Parse(settings.searchCount);
         }
 

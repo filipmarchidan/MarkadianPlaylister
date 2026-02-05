@@ -33,9 +33,9 @@ namespace MarkadianPlaylister
         public Form1()
         {
             InitializeComponent();
+            ResourceManager.EnsureAllExtracted();
 
-            checkUpdates();
-
+           
             searchLogic.downloadLogic.ProgressChanged += (value) =>
             {
                 if (progressSongStatus.InvokeRequired)
@@ -59,6 +59,11 @@ namespace MarkadianPlaylister
                 else
                     statusQueue.Text = text;
             };
+            Debug.WriteLine("yt-dlp path: " + exePath);
+            Debug.WriteLine("ffmpeg dir: " + Path.GetDirectoryName(ffmpeg));
+            Debug.WriteLine("ffmpeg exists: " + File.Exists(ffmpeg));
+            Debug.WriteLine("ffprobe exists: " + File.Exists(Path.Combine(Path.GetDirectoryName(ffmpeg), "ffprobe.exe")));
+
         }
 
         private void splitContainer1_Panel2_Paint(object sender, PaintEventArgs e)
@@ -66,13 +71,14 @@ namespace MarkadianPlaylister
 
         }
 
-        public static async void checkUpdates() {
+        public static async void checkUpdates()
+        {
             await ResourceUpdater.CheckForUpdatesAsync();
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            
+
             listViewSongs.Items.Clear();
             markadianSettings = SettingsManager.LoadSettings();
             ThemeManager.SetTheme(markadianSettings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
@@ -81,16 +87,29 @@ namespace MarkadianPlaylister
             pathDisplay.Text = filePath.ToString();
             songsDownloaded = 0;
             songsEnqueued = 0;
+            listViewSongs.AllowDrop = true;
+            splitContainer1.Panel2.AllowDrop = true;
             if (!markadianSettings.enableQueue)
             {
                 queueStatus.Text = "Queue Disabled";
-
             }
             else { queueStatus.Text = "Queue Enabled"; }
 
+            if (markadianSettings.enableUpdates)
+            {
+                checkUpdates();
+            }
+
+            indexAudio(filePath);
+
+
+        }
+
+        public async void indexAudio(String filePath)
+        {
             var files = Directory.GetFiles(filePath, "*.*")
-                         .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
-                                  || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
+                       .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                                || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
 
             foreach (var f in files)
             {
@@ -117,9 +136,9 @@ namespace MarkadianPlaylister
 
 
             }
-
         }
 
+        //public void indexSongMetadata()
 
         private async void downloadButton_Click(object sender, EventArgs e)
         {
@@ -153,6 +172,7 @@ namespace MarkadianPlaylister
                 filePath = folderBrowserDialog1.SelectedPath;
                 pathDisplay.Text = filePath.ToString();
                 markadianSettings.filePath = filePath;
+                indexAudio(filePath);
             }
             else { MessageBox.Show("Not a valid path"); }
         }
@@ -538,7 +558,7 @@ namespace MarkadianPlaylister
                 SettingsManager.SaveSettings(markadianSettings);
             }
 
-            
+
         }
 
         private void darkToolStripMenuItem_Click(object sender, EventArgs e)
@@ -554,6 +574,35 @@ namespace MarkadianPlaylister
                 ThemeManager.ApplyTheme(this);
                 SettingsManager.SaveSettings(markadianSettings);
             }
+        }
+
+        private void listViewSongs_SelectedIndexChanged_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+
+        }
+
+        private void listViewSongs_DragEnter(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            bool valid = files.All(f =>
+            {
+                string ext = Path.GetExtension(f).ToLowerInvariant();
+                return ext == ".mp3" || ext == ".wav";
+            });
+
+            e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
         }
 
 

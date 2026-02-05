@@ -9,29 +9,32 @@ namespace MarkadianPlaylister
 {
     public static class ResourceManager
     {
-        private static string ExtractResource(string resourceName, string fileName)
-        {
-            string outPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-            if (!File.Exists(outPath))
-            {
-                using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
-                if (stream == null)
-                    throw new Exception($"Resource '{resourceName}' not found!");
+        private static readonly string BinDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin");
 
-                using FileStream fs = new FileStream(outPath, FileMode.Create, FileAccess.Write);
-                stream.CopyTo(fs);
-            }
-            return outPath;
+        public static string Extract(string fileName, byte[] resource)
+        {
+            Directory.CreateDirectory(BinDir);
+            string targetPath = Path.Combine(BinDir, fileName);
+
+            if (!File.Exists(targetPath))
+                File.WriteAllBytes(targetPath, resource);
+
+            return targetPath;
         }
 
-        public static string GetYtDlp() =>
-            ExtractResource("MarkadianPlaylister.Resources.yt_dlp.exe", "yt-dlp.exe");
+        public static void EnsureAllExtracted()
+        {
+            Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
+            Extract("ffmpeg.exe", ResourceDll.GetFfmpeg());
+            Extract("ffprobe.exe", ResourceDll.GetFfprobe());
+        }
+    }
 
-        public static string GetFfmpeg() =>
-            ExtractResource("MarkadianPlaylister.Resources.ffmpeg.exe", "ffmpeg.exe");
-
-        public static string GetFfprobe() =>
-            ExtractResource("MarkadianPlaylister.Resources.ffprobe.exe", "ffprobe.exe");
+    public static class ResourceDll
+    {
+        public static byte[] GetYtDlp() => Properties.Resources.yt_dlp;
+        public static byte[] GetFfmpeg() => Properties.Resources.ffmpeg;
+        public static byte[] GetFfprobe() => Properties.Resources.ffprobe;
     }
 
 }

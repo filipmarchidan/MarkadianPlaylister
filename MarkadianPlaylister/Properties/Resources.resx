@@ -121,6 +121,9 @@
   <data name="ffmpeg" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\ffmpeg.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="ffprobe" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\ffprobe.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="yt-dlp" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\yt-dlp.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

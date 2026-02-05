@@ -40,6 +40,7 @@
             label1 = new Label();
             countNumber = new NumericUpDown();
             folderBrowserDialog1 = new FolderBrowserDialog();
+            checkBox1 = new CheckBox();
             tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)countNumber).BeginInit();
             SuspendLayout();
@@ -58,14 +59,15 @@
             tableLayoutPanel1.Controls.Add(enableQueue, 0, 2);
             tableLayoutPanel1.Controls.Add(label1, 0, 3);
             tableLayoutPanel1.Controls.Add(countNumber, 1, 3);
+            tableLayoutPanel1.Controls.Add(checkBox1, 1, 2);
             tableLayoutPanel1.Dock = DockStyle.Fill;
             tableLayoutPanel1.Location = new Point(0, 0);
             tableLayoutPanel1.Margin = new Padding(4);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 6;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.666666F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.666666F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.666666F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.3701077F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.7259789F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.666666F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.666666F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 16.666666F));
@@ -76,7 +78,7 @@
             // 
             pathDisplay.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             pathDisplay.AutoSize = true;
-            pathDisplay.Location = new Point(4, 127);
+            pathDisplay.Location = new Point(4, 126);
             pathDisplay.Margin = new Padding(4, 0, 4, 0);
             pathDisplay.Name = "pathDisplay";
             pathDisplay.Size = new Size(492, 25);
@@ -138,7 +140,7 @@
             button3.Location = new Point(504, 97);
             button3.Margin = new Padding(4);
             button3.Name = "button3";
-            button3.Size = new Size(492, 85);
+            button3.Size = new Size(492, 84);
             button3.TabIndex = 6;
             button3.Text = "Change Path";
             button3.UseVisualStyleBackColor = true;
@@ -148,10 +150,10 @@
             // 
             enableQueue.AutoSize = true;
             enableQueue.Dock = DockStyle.Fill;
-            enableQueue.Location = new Point(4, 190);
+            enableQueue.Location = new Point(4, 189);
             enableQueue.Margin = new Padding(4);
             enableQueue.Name = "enableQueue";
-            enableQueue.Size = new Size(492, 85);
+            enableQueue.Size = new Size(492, 86);
             enableQueue.TabIndex = 7;
             enableQueue.Text = "Enable Queue";
             enableQueue.UseVisualStyleBackColor = true;
@@ -176,6 +178,16 @@
             countNumber.TabIndex = 9;
             countNumber.TextAlign = HorizontalAlignment.Right;
             countNumber.Value = new decimal(new int[] { 5, 0, 0, 0 });
+            // 
+            // checkBox1
+            // 
+            checkBox1.AutoSize = true;
+            checkBox1.Location = new Point(503, 188);
+            checkBox1.Name = "checkBox1";
+            checkBox1.Size = new Size(121, 29);
+            checkBox1.TabIndex = 10;
+            checkBox1.Text = "checkBox1";
+            checkBox1.UseVisualStyleBackColor = true;
             // 
             // Preferences
             // 
@@ -207,5 +219,6 @@
         private FolderBrowserDialog folderBrowserDialog1;
         private Label label1;
         private NumericUpDown countNumber;
+        private CheckBox checkBox1;
     }
 }

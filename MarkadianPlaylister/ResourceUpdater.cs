@@ -1,22 +1,31 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using System.Windows.Forms;
-using System.Linq;
 
 namespace MarkadianPlaylister
 {
     public static class ResourceUpdater
     {
-        private static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
-        private static readonly string TempDir = Path.Combine(Path.GetTempPath(), "MarkadianUpdater");
 
-        private static readonly string YtDlpPath = Path.Combine(BaseDir, "yt-dlp.exe");
-        private static readonly string FfmpegPath = Path.Combine(BaseDir, "ffmpeg.exe");
+
+        private static readonly string TempDir =
+            Path.Combine(Path.GetTempPath(), "MarkadianUpdater");
+
+        private static readonly string RealAppDir =
+    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin");
+
+        private static readonly string YtDlpPath =
+            Path.Combine(RealAppDir, "yt-dlp.exe");
+
+        private static readonly string FfmpegPath =
+            Path.Combine(RealAppDir, "ffmpeg.exe");
+
 
         private const string APP_REPO = "filipmarchidan/MarkadianPlaylister";
 
@@ -32,135 +41,155 @@ namespace MarkadianPlaylister
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[Updater] Error: {ex}");
+                Debug.WriteLine("[Updater] Fatal error: " + ex);
             }
+
+            
+
         }
 
-        // ---------- APP UPDATE ----------
+        // ================= APP UPDATE =================
+
         private static async Task CheckAppUpdateAsync()
         {
-            try
+            string latest = await GetLatestGitHubTagAsync(
+                $"https://api.github.com/repos/{APP_REPO}/releases/latest");
+
+            if (string.IsNullOrWhiteSpace(latest))
+                return;
+
+            string local = Application.ProductVersion;
+
+            if (!VersionsEqual(local, latest))
             {
-                string apiUrl = $"https://api.github.com/repos/{APP_REPO}/releases/latest";
-                string latestVersion = await GetLatestGitHubTagAsync(apiUrl);
-                if (string.IsNullOrEmpty(latestVersion)) return;
+                var res = MessageBox.Show(
+                    $"A new version is available.\n\nCurrent: {local}\nLatest: {latest}\n\nOpen download page?",
+                    "Update Available - Markadian Playlister",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
 
-                string localVersion = Application.ProductVersion;
-
-                if (localVersion != latestVersion)
+                if (res == DialogResult.Yes)
                 {
-                    var res = MessageBox.Show(
-                        $"A newer version of Markadian Playlister is available.\n\n" +
-                        $"Current: {localVersion}\nLatest: {latestVersion}\n\nDo you want to open the download page?",
-                        "Update Available - Markadian Playlister",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Information
-                    );
-
-                    if (res == DialogResult.Yes)
+                    Process.Start(new ProcessStartInfo
                     {
-                        string releasePage = $"https://github.com/{APP_REPO}/releases/latest";
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = releasePage,
-                            UseShellExecute = true
-                        });
-                    }
+                        FileName = $"https://github.com/{APP_REPO}/releases/latest",
+                        UseShellExecute = true
+                    });
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Updater] App update check failed: {ex.Message}");
             }
         }
 
-        // ---------- YT-DLP UPDATE ----------
+        // ================= YT-DLP UPDATE =================
+
         private static async Task CheckYtDlpAsync()
         {
-            try
+            string latest = await GetLatestGitHubTagAsync(
+                "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest");
+
+            if (string.IsNullOrWhiteSpace(latest))
+                return;
+
+            string local = await GetLocalYtDlpVersionAsync();
+
+            if (VersionsEqual(local, latest))
+                return;
+
+            var res = MessageBox.Show(
+                $"yt-dlp update available.\n\nCurrent: {local}\nLatest: {latest}\n\nUpdate now?",
+                "Update Available - yt-dlp",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (res != DialogResult.Yes)
+                return;
+
+            string tempFile = Path.Combine(TempDir, "yt-dlp.exe");
+
+            await DownloadFileAsync(
+                "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
+                tempFile);
+
+            ReplaceFile(tempFile, YtDlpPath);
+
+            string newVersion = await GetLocalYtDlpVersionAsync();
+
+            if (VersionsEqual(newVersion, latest))
             {
-                string apiUrl = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
-                string latestVersion = await GetLatestGitHubTagAsync(apiUrl);
-                string localVersion = await GetLocalYtDlpVersionAsync();
-
-                if (string.IsNullOrEmpty(latestVersion)) return;
-                if (localVersion == latestVersion) return;
-
-                var result = MessageBox.Show(
-                    $"A newer version of yt-dlp is available.\n\n" +
-                    $"Current: {localVersion}\nLatest: {latestVersion}\n\nDo you want to update now?",
-                    "Update Available - yt-dlp",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
-
-                if (result == DialogResult.Yes)
-                {
-                    await DownloadAndReplaceAsync(
-                        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
-                        YtDlpPath,
-                        "yt-dlp"
-                    );
-                }
+                MessageBox.Show("yt-dlp updated successfully.",
+                    "Update Complete",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine($"[Updater] yt-dlp check failed: {ex.Message}");
+                MessageBox.Show("yt-dlp update failed.",
+                    "Update Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
+
+            Debug.WriteLine("New version after update: " + newVersion);
         }
 
-        // ---------- FFMPEG UPDATE ----------
+        // ================= FFMPEG UPDATE =================
+
         private static async Task CheckFfmpegAsync()
         {
-            try
-            {
-                string latestUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
-                string tempZip = Path.Combine(TempDir, "ffmpeg.zip");
+            var res = MessageBox.Show(
+                "Check for FFmpeg update?",
+                "FFmpeg Update",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
 
-                var result = MessageBox.Show(
-                    "Do you want to check for an FFmpeg update?",
-                    "Update Available - FFmpeg",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
+            if (res != DialogResult.Yes)
+                return;
 
-                if (result != DialogResult.Yes) return;
+            string zipPath = Path.Combine(TempDir, "ffmpeg.zip");
 
-                await DownloadFileAsync(latestUrl, tempZip);
+            await DownloadFileAsync(
+                "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
+                zipPath);
 
-                using var zip = ZipFile.OpenRead(tempZip);
-                var ffmpegEntry = zip.Entries.FirstOrDefault(e =>
+            using var zip = ZipFile.OpenRead(zipPath);
+
+            var entry = zip.Entries
+                .FirstOrDefault(e =>
                     e.FullName.EndsWith("ffmpeg.exe", StringComparison.OrdinalIgnoreCase));
 
-                if (ffmpegEntry != null)
-                {
-                    ffmpegEntry.ExtractToFile(FfmpegPath, true);
-                    MessageBox.Show("FFmpeg has been updated successfully.",
-                        "Update Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Could not find ffmpeg.exe in the downloaded archive.",
-                        "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-            catch (Exception ex)
+            if (entry == null)
             {
-                Debug.WriteLine($"[Updater] FFmpeg check failed: {ex.Message}");
+                MessageBox.Show("ffmpeg.exe not found in archive.",
+                    "Update Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
             }
+
+            string tempExe = Path.Combine(TempDir, "ffmpeg.exe");
+            entry.ExtractToFile(tempExe, true);
+
+            ReplaceFile(tempExe, FfmpegPath);
+
+            MessageBox.Show("FFmpeg updated successfully.",
+                "Update Complete",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
 
-        // ---------- SUPPORT METHODS ----------
+        // ================= HELPERS =================
+
         private static async Task<string> GetLatestGitHubTagAsync(string apiUrl)
         {
             try
             {
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("User-Agent", "MarkadianPlaylister");
-                string json = await client.GetStringAsync(apiUrl);
 
+                string json = await client.GetStringAsync(apiUrl);
                 using var doc = JsonDocument.Parse(json);
-                return doc.RootElement.GetProperty("tag_name").GetString() ?? "";
+
+                return NormalizeVersion(
+                    doc.RootElement.GetProperty("tag_name").GetString());
             }
             catch
             {
@@ -172,7 +201,8 @@ namespace MarkadianPlaylister
         {
             try
             {
-                if (!File.Exists(YtDlpPath)) return "none";
+                if (!File.Exists(YtDlpPath))
+                    return "none";
 
                 var psi = new ProcessStartInfo
                 {
@@ -186,7 +216,8 @@ namespace MarkadianPlaylister
                 using var proc = Process.Start(psi);
                 string output = await proc.StandardOutput.ReadToEndAsync();
                 await proc.WaitForExitAsync();
-                return output.Trim();
+
+                return NormalizeVersion(output.Trim());
             }
             catch
             {
@@ -194,32 +225,45 @@ namespace MarkadianPlaylister
             }
         }
 
-        private static async Task DownloadAndReplaceAsync(string url, string targetPath, string label)
-        {
-            try
-            {
-                string tempFile = Path.Combine(TempDir, Path.GetFileName(targetPath));
-                await DownloadFileAsync(url, tempFile);
-                File.Copy(tempFile, targetPath, true);
-
-                MessageBox.Show($"{label} has been updated successfully.",
-                    "Update Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to update {label}: {ex.Message}",
-                    "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private static async Task DownloadFileAsync(string url, string destination)
         {
             using var client = new HttpClient();
-            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await client.GetAsync(url);
             response.EnsureSuccessStatusCode();
 
-            await using var fs = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var fs = new FileStream(destination, FileMode.Create, FileAccess.Write);
             await response.Content.CopyToAsync(fs);
+        }
+
+        private static void ReplaceFile(string source, string target)
+        {
+            try
+            {
+                if (File.Exists(target))
+                    File.Delete(target);
+
+                File.Move(source, target);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to replace file:\n{ex.Message}",
+                    "Update Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        private static string NormalizeVersion(string? version)
+        {
+            if (string.IsNullOrWhiteSpace(version))
+                return "";
+
+            return version.Trim().TrimStart('v', 'V');
+        }
+
+        private static bool VersionsEqual(string v1, string v2)
+        {
+            return NormalizeVersion(v1) == NormalizeVersion(v2);
         }
     }
 }

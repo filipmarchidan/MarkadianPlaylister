@@ -19,9 +19,14 @@ namespace MarkadianPlaylister
         public bool locked;
         public static int songsDownloaded { get; set; }
         public static int songsEnqueued { get; set; }
-        public static string exePath { get; set; } = ResourceManager.GetYtDlp();
 
-        string ffmpeg { get; set; } = ResourceManager.GetFfmpeg();
+        string rbin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin");
+        public static string exePath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+
+        string ffmpeg { get; set; } = ResourceManager.Extract("ffmpeg.exe", ResourceDll.GetYtDlp());
+
+       // string ffprobe { get; set; } = ResourceManager.Extract("ffprobe.exe", ResourceDll.GetFfprobe());
+
 
         Queue<string> videoLinks = new Queue<string>();
 
@@ -38,6 +43,13 @@ namespace MarkadianPlaylister
             filePath = markadianSettings.filePath;
             songsDownloaded = 0;
             songsEnqueued = 0;
+            filePath = markadianSettings.filePath;
+            // Only extract if missing
+            if (!File.Exists(exePath))
+                exePath = ResourceManager.Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
+
+            if (!File.Exists(ffmpeg))
+                ffmpeg = ResourceManager.Extract("ffmpeg.exe", ResourceDll.GetFfmpeg());
         }
 
         public async Task handleDownloadLogic(string videoUrl)
@@ -165,6 +177,9 @@ namespace MarkadianPlaylister
 
         private async Task DownloadWithYtDlp2(string videoUrl, string folderPath)
         {
+            Debug.WriteLine($"ffmpeg exists? {File.Exists(ffmpeg)} at {ffmpeg}");
+            Debug.WriteLine($"yt-dlp exists? {File.Exists(exePath)} at {exePath}");
+
             ProgressChanged?.Invoke(0);
             StatusChanged?.Invoke("Preparing download...");
 
@@ -178,14 +193,14 @@ namespace MarkadianPlaylister
                 StatusChanged?.Invoke("Invalid YouTube URL");
                 return;
             }
-
+            Debug.WriteLine($"URL PROVIDED ? { videoUrl}");
             // ✅ Prepare paths
             string bitRate = markadianSettings.bitRateSelector ?? "192";
-            string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+            string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory);
 
             // We’ll use yt-dlp’s built-in printing of the final filepath after postprocessing
             string outputTemplate = Path.Combine(folderPath, "%(title)s.%(ext)s");
-
+            string ffmpegDir = Path.GetDirectoryName(ffmpegPath);
             // ✅ Build arguments — single-pass audio extraction, concurrent fragments, safe output
             string arguments =
                 $"-f bestaudio " +
@@ -193,11 +208,16 @@ namespace MarkadianPlaylister
                 $"--geo-bypass --geo-bypass-country US " +
                 $"--no-cache-dir --no-playlist --newline " +
                 $"--no-check-certificates --ignore-errors " +
-                $"--ffmpeg-location \"{ffmpegPath}\" " +
+                $"--ffmpeg-location \"{ffmpegDir}\" " +
                 $"--concurrent-fragments 8 " +
                 $"--print after_move:filepath " +
                 $"--user-agent \"Mozilla/5.0\" " +
-                $"-o \"{outputTemplate}\" \"{videoUrl}\"";
+                 $"-o \"{outputTemplate}\" {videoUrl}";
+
+            //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin", "ffmpeg.exe");
+             // remove trailing backslash safely
+
+            Debug.WriteLine("PATH 1" + ffmpegPath + "  path 2" + ffmpegDir);
 
             var psi = new ProcessStartInfo
             {
@@ -210,7 +230,7 @@ namespace MarkadianPlaylister
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8
             };
-
+            Debug.WriteLine($"yt-dlp arguments: {arguments}");
             StatusChanged?.Invoke("Downloading...");
 
             string? downloadedFilePath = null;

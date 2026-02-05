@@ -23,5 +23,8 @@ namespace MarkadianPlaylister
 
         [JsonPropertyName("searchCount")]
         public string searchCount { get; set; }
+
+        [JsonPropertyName("enableUpdates")]
+        public bool enableUpdates { get; set; }
     }
 }

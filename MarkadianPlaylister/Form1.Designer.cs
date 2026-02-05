@@ -145,14 +145,14 @@
             // downloadLocationToolStripMenuItem
             // 
             downloadLocationToolStripMenuItem.Name = "downloadLocationToolStripMenuItem";
-            downloadLocationToolStripMenuItem.Size = new Size(268, 34);
+            downloadLocationToolStripMenuItem.Size = new Size(270, 34);
             downloadLocationToolStripMenuItem.Text = "Download Location";
             downloadLocationToolStripMenuItem.Click += downloadLocationToolStripMenuItem_Click;
             // 
             // preferencesToolStripMenuItem
             // 
             preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
-            preferencesToolStripMenuItem.Size = new Size(268, 34);
+            preferencesToolStripMenuItem.Size = new Size(270, 34);
             preferencesToolStripMenuItem.Text = "Preferences";
             preferencesToolStripMenuItem.Click += preferencesToolStripMenuItem_Click;
             // 
@@ -160,13 +160,13 @@
             // 
             themeToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { lightToolStripMenuItem, darkToolStripMenuItem });
             themeToolStripMenuItem.Name = "themeToolStripMenuItem";
-            themeToolStripMenuItem.Size = new Size(268, 34);
+            themeToolStripMenuItem.Size = new Size(270, 34);
             themeToolStripMenuItem.Text = "Theme";
             // 
             // lightToolStripMenuItem
             // 
-            lightToolStripMenuItem.Checked = true;
             lightToolStripMenuItem.CheckState = CheckState.Checked;
+            lightToolStripMenuItem.Checked = true;
             lightToolStripMenuItem.Name = "lightToolStripMenuItem";
             lightToolStripMenuItem.Size = new Size(153, 34);
             lightToolStripMenuItem.Text = "Light";
@@ -181,8 +181,8 @@
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.Checked = true;
             viewToolStripMenuItem.CheckState = CheckState.Checked;
+            viewToolStripMenuItem.Checked = true;
             viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { downloadToolStripMenuItem, metadataPanelToolStripMenuItem, youtubeSearchPanelToolStripMenuItem, listPanelToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new Size(65, 29);
@@ -190,8 +190,8 @@
             // 
             // downloadToolStripMenuItem
             // 
-            downloadToolStripMenuItem.Checked = true;
             downloadToolStripMenuItem.CheckState = CheckState.Checked;
+            downloadToolStripMenuItem.Checked = true;
             downloadToolStripMenuItem.Name = "downloadToolStripMenuItem";
             downloadToolStripMenuItem.Size = new Size(282, 34);
             downloadToolStripMenuItem.Text = "Download Panel";
@@ -199,8 +199,8 @@
             // 
             // metadataPanelToolStripMenuItem
             // 
-            metadataPanelToolStripMenuItem.Checked = true;
             metadataPanelToolStripMenuItem.CheckState = CheckState.Checked;
+            metadataPanelToolStripMenuItem.Checked = true;
             metadataPanelToolStripMenuItem.Name = "metadataPanelToolStripMenuItem";
             metadataPanelToolStripMenuItem.Size = new Size(282, 34);
             metadataPanelToolStripMenuItem.Text = "Metadata Panel";
@@ -208,8 +208,8 @@
             // 
             // youtubeSearchPanelToolStripMenuItem
             // 
-            youtubeSearchPanelToolStripMenuItem.Checked = true;
             youtubeSearchPanelToolStripMenuItem.CheckState = CheckState.Checked;
+            youtubeSearchPanelToolStripMenuItem.Checked = true;
             youtubeSearchPanelToolStripMenuItem.Name = "youtubeSearchPanelToolStripMenuItem";
             youtubeSearchPanelToolStripMenuItem.Size = new Size(282, 34);
             youtubeSearchPanelToolStripMenuItem.Text = "Youtube Search Panel";
@@ -217,8 +217,8 @@
             // 
             // listPanelToolStripMenuItem
             // 
-            listPanelToolStripMenuItem.Checked = true;
             listPanelToolStripMenuItem.CheckState = CheckState.Checked;
+            listPanelToolStripMenuItem.Checked = true;
             listPanelToolStripMenuItem.Name = "listPanelToolStripMenuItem";
             listPanelToolStripMenuItem.Size = new Size(282, 34);
             listPanelToolStripMenuItem.Text = "List Panel";
@@ -415,6 +415,8 @@
             listViewSongs.UseCompatibleStateImageBehavior = false;
             listViewSongs.View = View.Details;
             listViewSongs.ItemSelectionChanged += listViewSongs_ItemSelectionChanged;
+            listViewSongs.SelectedIndexChanged += listViewSongs_SelectedIndexChanged_1;
+            listViewSongs.DragEnter += listViewSongs_DragEnter;
             // 
             // titleSongList
             // 
@@ -758,7 +760,6 @@
             ClientSize = new Size(1836, 810);
             Controls.Add(splitContainer1);
             Controls.Add(menuStrip1);
-            Cursor = Cursors.IBeam;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
             Margin = new Padding(4);
