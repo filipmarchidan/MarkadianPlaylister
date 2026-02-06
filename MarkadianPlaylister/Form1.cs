@@ -12,7 +12,10 @@ namespace MarkadianPlaylister
 {
     public partial class Form1 : Form
     {
-
+        /*
+         * Main class this contains the metadata logic and UI logic
+         *
+         */
         public MarkadianSettings markadianSettings;
         public SearchLogic searchLogic = new SearchLogic();
         public static string filePath;
@@ -32,6 +35,7 @@ namespace MarkadianPlaylister
             //ResourceManager.EnsureAllExtracted();
 
 
+            //This handles the dynamic behavior for progress bars and number of songs downloaded
             searchLogic.downloadLogic.ProgressChanged += (value) =>
             {
                 if (progressSongStatus.InvokeRequired)
@@ -65,6 +69,7 @@ namespace MarkadianPlaylister
 
         }
 
+        //function that checks if all dependencies are updated. For details see ResourceUpdater
         public static async void checkUpdates()
         {
             await ResourceUpdater.EnsureResourcesAsync();
@@ -73,6 +78,7 @@ namespace MarkadianPlaylister
         private void Form1_Load(object sender, EventArgs e)
         {
 
+            //load settings and initial load.
             listViewSongs.Items.Clear();
             markadianSettings = SettingsManager.LoadSettings();
             ThemeManager.SetTheme(markadianSettings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
@@ -121,12 +127,14 @@ namespace MarkadianPlaylister
             ffmpeg = Path.Combine(markadianSettings.resourceDirectory, "ffmpeg.exe");
             exePath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
 
+            //for debug only. Check dependencies
             Console.WriteLine("yt-dlp path: " + exePath);
             Console.WriteLine("ffmpeg dir: " + Path.GetDirectoryName(ffmpeg));
             Console.WriteLine("ffmpeg exists: " + File.Exists(ffmpeg));
             Console.WriteLine("ffprobe exists: " + File.Exists(Path.Combine(Path.GetDirectoryName(ffmpeg), "ffprobe.exe")));
         }
 
+        //function that scans the folder for .mp3 and .wav files
         public async void indexAudio(String filePath)
         {
             listViewSongs.Items.Clear();
@@ -162,7 +170,7 @@ namespace MarkadianPlaylister
         }
 
         //public void indexSongMetadata()
-
+        //this calls the download logic
         private async void downloadButton_Click(object sender, EventArgs e)
         {
 
@@ -186,7 +194,7 @@ namespace MarkadianPlaylister
 
 
 
-
+        //function to change your download location
         private void downloadLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
             folderBrowserDialog1.Description = "Select a new location for your music";
@@ -203,7 +211,7 @@ namespace MarkadianPlaylister
 
 
 
-
+        //this opens the settings form
         private void preferencesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using var prefForm = new Preferences(this.markadianSettings);
@@ -225,6 +233,7 @@ namespace MarkadianPlaylister
 
         }
 
+        //this handles the metadata when you click a certain file in the list
         private void listViewSongs_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listViewSongs.SelectedItems.Count == 0)
@@ -266,6 +275,7 @@ namespace MarkadianPlaylister
             }
         }
 
+        //this saves the metadata of the file you edited in the metadata editor.
         private void button1_Click_1(object sender, EventArgs e)
         {
             if (listViewSongs.SelectedItems.Count == 0 || listViewSongs.SelectedItems.Count > 1)
@@ -337,6 +347,7 @@ namespace MarkadianPlaylister
             }
         }
 
+        //handles image formats
         private string GetMimeType(string path)
         {
             string ext = Path.GetExtension(path).ToLowerInvariant();
@@ -349,6 +360,7 @@ namespace MarkadianPlaylister
             };
         }
 
+        //this handles the metadata when you click a certain file in the list
         private void listViewSongs_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
             if (listViewSongs.SelectedItems.Count == 0)
@@ -426,6 +438,8 @@ namespace MarkadianPlaylister
             this.Close();
         }
 
+
+        //handles images to update the metadata for a file
         private void uploadImage_Click(object sender, EventArgs e)
         {
 
@@ -448,6 +462,7 @@ namespace MarkadianPlaylister
 
         }
 
+        //handles searches in youtube
         private async void youtubeSearchButton_Click(object sender, EventArgs e)
         {
             string query = youtubeSearchTextBox.Text;
@@ -459,7 +474,9 @@ namespace MarkadianPlaylister
 
             youtubeSearchResults.Controls.Clear();
             youtubeSearchResults.SuspendLayout();
-
+            //results will depend on the search count
+            // the higher the search count the slower the performance
+            // see SearchLogic.cs for further details
             try
             {
                 var results = await searchLogic.SearchYoutubeVideosAsync(query);
@@ -485,6 +502,7 @@ namespace MarkadianPlaylister
 
         }
 
+        //handles enter as a search
         private void youtubeSearchTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
@@ -495,7 +513,7 @@ namespace MarkadianPlaylister
 
             }
         }
-
+        
         private void linkText_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
@@ -506,7 +524,7 @@ namespace MarkadianPlaylister
 
             }
         }
-
+        //handles panel viewing
         private void downloadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (downloadToolStripMenuItem.Checked)
@@ -520,7 +538,7 @@ namespace MarkadianPlaylister
                 bottomNavigator.Panel1Collapsed = false;
             }
         }
-
+        //handles panel viewing
         private void youtubeSearchPanelToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (youtubeSearchPanelToolStripMenuItem.Checked)
@@ -535,7 +553,7 @@ namespace MarkadianPlaylister
 
             }
         }
-
+        //handles panel viewing
         private void metadataPanelToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (metadataPanelToolStripMenuItem.Checked)
@@ -550,7 +568,7 @@ namespace MarkadianPlaylister
                 splitContainer1.Panel2Collapsed = false;
             }
         }
-
+        //handles panel viewing
         private void listPanelToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (listPanelToolStripMenuItem.Checked)
@@ -564,7 +582,7 @@ namespace MarkadianPlaylister
                 bottomNavigator.Panel2Collapsed = false;
             }
         }
-
+        //handles theme option
         private void lightToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (lightToolStripMenuItem.Checked)
@@ -573,6 +591,7 @@ namespace MarkadianPlaylister
             }
             else
             {
+                //see theme manager for further details
                 darkToolStripMenuItem.Checked = false;
                 ThemeManager.SetTheme(AppTheme.Light);
                 markadianSettings.theme = "Light";
@@ -609,6 +628,8 @@ namespace MarkadianPlaylister
 
         }
 
+
+        //handles drag and drop functionality for metadata
         private void listViewSongs_DragEnter(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -630,7 +651,7 @@ namespace MarkadianPlaylister
             listViewSongs.BackColor = Color.FromArgb(60, 60, 65);
         }
 
-
+        //handles drag and drop functionality for metadata
         private void listViewSongs_DragDrop(object sender, DragEventArgs e)
         {
             var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
@@ -668,6 +689,7 @@ namespace MarkadianPlaylister
             }
         }
 
+        //handles auto updates
         private void enableAutomaticUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (enableAutomaticUpdatesToolStripMenuItem.Checked)
@@ -700,11 +722,13 @@ namespace MarkadianPlaylister
             }
         }
 
+        //save settings when the application closes
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             SettingsManager.SaveSettings(markadianSettings);
         }
 
+        //reindex the files
         private void rescanAudioToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
@@ -726,7 +750,7 @@ namespace MarkadianPlaylister
             };
             System.Diagnostics.Process.Start(psi);
         }
-
+        //handles metadata drag and drop in the metadata panel
         private void splitContainer1_Panel2_DragDrop(object sender, DragEventArgs e)
         {
             var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
@@ -763,7 +787,7 @@ namespace MarkadianPlaylister
                 }
             }
         }
-
+        //handles metadata drag and drop in the metadata panel
         private void splitContainer1_Panel2_DragEnter(object sender, DragEventArgs e)
         {
             tableLayoutPanel2.BackColor = Color.FromArgb(60, 60, 65);

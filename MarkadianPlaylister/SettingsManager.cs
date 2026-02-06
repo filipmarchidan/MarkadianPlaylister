@@ -4,6 +4,7 @@ using System.Text.Json;
 
 namespace MarkadianPlaylister
 {
+    //This class retrieves and saves settings to file
     public static class SettingsManager
     {
         private static readonly string BaseDir =
@@ -15,6 +16,7 @@ namespace MarkadianPlaylister
         private static readonly string settingsFilePath =
             Path.Combine(BaseDir, "settings.json");
 
+        //if the file is not found then default settings will be loaded.
         public static MarkadianSettings LoadSettings()
         {
             // Ensure default resource folder exists
@@ -95,6 +97,7 @@ namespace MarkadianPlaylister
             }
         }
 
+        //write the settings to file.
         public static void SaveSettings(MarkadianSettings settings)
         {
             // Ensure resource folder exists before saving

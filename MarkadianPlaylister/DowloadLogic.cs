@@ -71,6 +71,9 @@ namespace MarkadianPlaylister
                     locked = false;
                     await startDownloadingWithQueue(videoLinks, filePath);
                 }
+                Form1 tempForm = (Form1)Application.OpenForms["Form1"];
+                //  tempForm.lis
+                tempForm.indexAudio(filePath);
                 return;
             }
             else
@@ -90,95 +93,9 @@ namespace MarkadianPlaylister
             }
         }
 
-        private async Task DownloadWithYtDlp(string videoUrl, string folderPath)
-        {
-            ProgressChanged?.Invoke(0);
-            StatusChanged?.Invoke("Preparing download...");
-
-            if (!File.Exists(exePath))
-                throw new FileNotFoundException("yt-dlp executable not found", exePath);
-
-            // Validate URL
-            bool IsValidYoutubeUrl(string url) =>
-                Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-                (uri.Host.Contains("youtube.com") || uri.Host.Contains("youtu.be"));
-
-            if (!IsValidYoutubeUrl(videoUrl))
-            {
-                StatusChanged?.Invoke("Invalid YouTube URL");
-                return;
-            }
-
-            // --- Step 1: Get video title ---
-            var titlePsi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = $"--get-title \"{videoUrl}\"",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var titleProc = Process.Start(titlePsi);
-            string videoTitle = (await titleProc.StandardOutput.ReadToEndAsync()).Trim();
-            await titleProc.WaitForExitAsync();
-            if (string.IsNullOrWhiteSpace(videoTitle))
-                videoTitle = "UnknownTitle";
-
-            string safeTitle = MakeSafeFileName(videoTitle);
-            string outputTemplate = Path.Combine(folderPath, safeTitle + ".%(ext)s");
-            string downloadedFile = Path.Combine(folderPath, safeTitle + ".mp3");
-            string tempFile = Path.Combine(folderPath, safeTitle + "_temp.mp3");
-
-            // --- Step 2: Download ---
-            var psi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = $"-f bestaudio --no-cache-dir --extract-audio --audio-format mp3 " +
-                            $"--user-agent \"Mozilla/5.0\" " +
-                            $"--ffmpeg-location \"{Path.GetDirectoryName(ffmpeg)}\" " +
-                            $"-o \"{outputTemplate}\" \"{videoUrl}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            StatusChanged?.Invoke("Downloading...");
-            using var proc = Process.Start(psi);
-            string stderr = await proc.StandardError.ReadToEndAsync();
-            await proc.WaitForExitAsync();
-
-            if (proc.ExitCode != 0 || !File.Exists(downloadedFile))
-            {
-                StatusChanged?.Invoke("Download failed.");
-                return;
-            }
-
-            // --- Step 3: Re-encode ---
-            string bitRate = markadianSettings.bitRateSelector ?? "192";
-            var conversion = Xabe.FFmpeg.FFmpeg.Conversions.New()
-                .AddParameter($"-i \"{downloadedFile}\" -vn -ar 44100 -b:a {bitRate}k \"{tempFile}\"");
-
-            conversion.OnProgress += (sender, args) =>
-            {
-                ProgressChanged?.Invoke((int)Math.Clamp(args.Percent, 0, 100));
-            };
-
-            StatusChanged?.Invoke("Converting...");
-            await conversion.Start();
-
-            if (File.Exists(downloadedFile))
-                File.Delete(downloadedFile);
-            File.Move(tempFile, downloadedFile);
-
-            songsDownloaded++;
-            QueueStatusChanged?.Invoke($"{songsDownloaded} / {songsEnqueued} Songs Downloaded");
-            StatusChanged?.Invoke("Downloaded");
-            DownloadCompleted?.Invoke(downloadedFile);
-        }
 
 
+        //the actual method used to download the youtube files
         private async Task DownloadWithYtDlp2(string videoUrl, string folderPath)
         {
             Debug.WriteLine($"ffmpeg exists? {File.Exists(ffmpeg)} at {ffmpeg}");
@@ -341,26 +258,115 @@ namespace MarkadianPlaylister
         }
 
 
-        private async Task<string> RunFFprobe(string filePath)
-        {
-            string ffprobePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffprobe.exe");
+        //private async Task<string> RunFFprobe(string filePath)
+        //{
+        //    string ffprobePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffprobe.exe");
 
-            var psi = new ProcessStartInfo
-            {
-                FileName = ffprobePath,
-                Arguments = $"-v error -select_streams a:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+        //    var psi = new ProcessStartInfo
+        //    {
+        //        FileName = ffprobePath,
+        //        Arguments = $"-v error -select_streams a:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"",
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError = true,
+        //        UseShellExecute = false,
+        //        CreateNoWindow = true
+        //    };
 
-            using var process = Process.Start(psi);
-            string output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
+        //    using var process = Process.Start(psi);
+        //    string output = await process.StandardOutput.ReadToEndAsync();
+        //    await process.WaitForExitAsync();
 
-            return output.Trim(); // returns bitrate in bits per second
-        }
+        //    return output.Trim(); // returns bitrate in bits per second
+        //}
 
+
+
+        //private async Task DownloadWithYtDlp(string videoUrl, string folderPath)
+        //{
+        //    ProgressChanged?.Invoke(0);
+        //    StatusChanged?.Invoke("Preparing download...");
+
+        //    if (!File.Exists(exePath))
+        //        throw new FileNotFoundException("yt-dlp executable not found", exePath);
+
+        //    // Validate URL
+        //    bool IsValidYoutubeUrl(string url) =>
+        //        Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+        //        (uri.Host.Contains("youtube.com") || uri.Host.Contains("youtu.be"));
+
+        //    if (!IsValidYoutubeUrl(videoUrl))
+        //    {
+        //        StatusChanged?.Invoke("Invalid YouTube URL");
+        //        return;
+        //    }
+
+        //    // --- Step 1: Get video title ---
+        //    var titlePsi = new ProcessStartInfo
+        //    {
+        //        FileName = exePath,
+        //        Arguments = $"--get-title \"{videoUrl}\"",
+        //        RedirectStandardOutput = true,
+        //        UseShellExecute = false,
+        //        CreateNoWindow = true
+        //    };
+
+        //    using var titleProc = Process.Start(titlePsi);
+        //    string videoTitle = (await titleProc.StandardOutput.ReadToEndAsync()).Trim();
+        //    await titleProc.WaitForExitAsync();
+        //    if (string.IsNullOrWhiteSpace(videoTitle))
+        //        videoTitle = "UnknownTitle";
+
+        //    string safeTitle = MakeSafeFileName(videoTitle);
+        //    string outputTemplate = Path.Combine(folderPath, safeTitle + ".%(ext)s");
+        //    string downloadedFile = Path.Combine(folderPath, safeTitle + ".mp3");
+        //    string tempFile = Path.Combine(folderPath, safeTitle + "_temp.mp3");
+
+        //    // --- Step 2: Download ---
+        //    var psi = new ProcessStartInfo
+        //    {
+        //        FileName = exePath,
+        //        Arguments = $"-f bestaudio --no-cache-dir --extract-audio --audio-format mp3 " +
+        //                    $"--user-agent \"Mozilla/5.0\" " +
+        //                    $"--ffmpeg-location \"{Path.GetDirectoryName(ffmpeg)}\" " +
+        //                    $"-o \"{outputTemplate}\" \"{videoUrl}\"",
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError = true,
+        //        UseShellExecute = false,
+        //        CreateNoWindow = true
+        //    };
+
+        //    StatusChanged?.Invoke("Downloading...");
+        //    using var proc = Process.Start(psi);
+        //    string stderr = await proc.StandardError.ReadToEndAsync();
+        //    await proc.WaitForExitAsync();
+
+        //    if (proc.ExitCode != 0 || !File.Exists(downloadedFile))
+        //    {
+        //        StatusChanged?.Invoke("Download failed.");
+        //        return;
+        //    }
+
+        //    // --- Step 3: Re-encode ---
+        //    string bitRate = markadianSettings.bitRateSelector ?? "192";
+        //    var conversion = Xabe.FFmpeg.FFmpeg.Conversions.New()
+        //        .AddParameter($"-i \"{downloadedFile}\" -vn -ar 44100 -b:a {bitRate}k \"{tempFile}\"");
+
+        //    conversion.OnProgress += (sender, args) =>
+        //    {
+        //        ProgressChanged?.Invoke((int)Math.Clamp(args.Percent, 0, 100));
+        //    };
+
+        //    StatusChanged?.Invoke("Converting...");
+        //    await conversion.Start();
+
+        //    if (File.Exists(downloadedFile))
+        //        File.Delete(downloadedFile);
+        //    File.Move(tempFile, downloadedFile);
+
+        //    songsDownloaded++;
+        //    QueueStatusChanged?.Invoke($"{songsDownloaded} / {songsEnqueued} Songs Downloaded");
+        //    StatusChanged?.Invoke("Downloaded");
+        //    DownloadCompleted?.Invoke(downloadedFile);
+        //}
     }
 }

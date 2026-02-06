@@ -3,6 +3,10 @@ using System.Windows.Forms;
 
 namespace MarkadianPlaylister
 {
+    /*
+     * 
+     * This object can change themes based on the enum AppTheme.
+     */
     public static class ThemeManager
     {
         public static AppTheme CurrentTheme { get; private set; } = AppTheme.Dark;
