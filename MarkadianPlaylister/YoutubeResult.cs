@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace MarkadianPlaylister
 {
+
+    /**
+     * Main object for the results on youtube
+     * 
+     */
     public class YoutubeResult
     {
         public string Title { get; set; }

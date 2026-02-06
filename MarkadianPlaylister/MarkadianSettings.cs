@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace MarkadianPlaylister
 {
+
+    // the general parameters for the settings file.
     public class MarkadianSettings
     {
         [JsonPropertyName("bitRate")]

@@ -10,10 +10,20 @@ using YoutubeExplode.Common;
 
 namespace MarkadianPlaylister
 {
+
+    //object that handles the searches on youtube.
+    
     public class SearchLogic {
 
         public DownloadLogic downloadLogic = new DownloadLogic();
         public readonly MarkadianSettings markadianSettings = SettingsManager.LoadSettings();
+
+
+        /// <summary>
+        /// Create a new card to display in the UI
+        /// </summary>
+        /// <param name="result"></param>
+        /// <returns></returns>
         public Control CreateYoutubeResultCard(YoutubeResult result)
         {
             var card = new Panel
@@ -118,7 +128,7 @@ namespace MarkadianPlaylister
                     Debug.WriteLine($"[Thumbnail Error] {ex.Message}");
                 }
             });
-
+            //this happens if you click on the card. Will begin downloading
             // --- ✅ Click Handling ---
             async Task HandleDownloadAsync()
             {
@@ -142,7 +152,7 @@ namespace MarkadianPlaylister
 
 
 
-
+        //actual search on youtube
         private static readonly YoutubeClient youtubeClient = new YoutubeClient();
 
         public async Task<List<YoutubeResult>> SearchYoutubeVideosAsync(string query)
@@ -169,7 +179,7 @@ namespace MarkadianPlaylister
             }
         }
 
-
+        //deprecated method. Will be fully removed in future releases
         private async Task<List<YoutubeResult>> SearchYouTubeAsyncYTDLP(string query)
         {
             var results = new List<YoutubeResult>();
