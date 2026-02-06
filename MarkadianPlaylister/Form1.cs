@@ -60,7 +60,7 @@ namespace MarkadianPlaylister
                     statusQueue.Text = text;
             };
 
-           
+
 
         }
 
@@ -513,7 +513,7 @@ namespace MarkadianPlaylister
 
             }
         }
-        
+
         private void linkText_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
@@ -815,6 +815,11 @@ namespace MarkadianPlaylister
         private void splitContainer1_Panel2_DragLeave(object sender, EventArgs e)
         {
             tableLayoutPanel2.BackColor = DefaultBackColor;
+        }
+
+        private void infoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Markadian Playlister v1.0.2");
         }
 
 

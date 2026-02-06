@@ -51,6 +51,7 @@
             helpToolStripMenuItem = new ToolStripMenuItem();
             discordServerToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
+            infoToolStripMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
             bottomNavigator = new SplitContainer();
@@ -120,6 +121,7 @@
             // 
             // menuStrip1
             // 
+            menuStrip1.BackgroundImageLayout = ImageLayout.Center;
             menuStrip1.ImageScalingSize = new Size(20, 20);
             menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem, toolsToolStripMenuItem, helpToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
@@ -139,7 +141,7 @@
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new Size(141, 34);
+            exitToolStripMenuItem.Size = new Size(270, 34);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
             // 
@@ -153,14 +155,14 @@
             // downloadLocationToolStripMenuItem
             // 
             downloadLocationToolStripMenuItem.Name = "downloadLocationToolStripMenuItem";
-            downloadLocationToolStripMenuItem.Size = new Size(268, 34);
+            downloadLocationToolStripMenuItem.Size = new Size(270, 34);
             downloadLocationToolStripMenuItem.Text = "Download Location";
             downloadLocationToolStripMenuItem.Click += downloadLocationToolStripMenuItem_Click;
             // 
             // preferencesToolStripMenuItem
             // 
             preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
-            preferencesToolStripMenuItem.Size = new Size(268, 34);
+            preferencesToolStripMenuItem.Size = new Size(270, 34);
             preferencesToolStripMenuItem.Text = "Preferences";
             preferencesToolStripMenuItem.Click += preferencesToolStripMenuItem_Click;
             // 
@@ -168,7 +170,7 @@
             // 
             themeToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { lightToolStripMenuItem, darkToolStripMenuItem });
             themeToolStripMenuItem.Name = "themeToolStripMenuItem";
-            themeToolStripMenuItem.Size = new Size(268, 34);
+            themeToolStripMenuItem.Size = new Size(270, 34);
             themeToolStripMenuItem.Text = "Theme";
             // 
             // lightToolStripMenuItem
@@ -190,7 +192,7 @@
             // rescanAudioToolStripMenuItem
             // 
             rescanAudioToolStripMenuItem.Name = "rescanAudioToolStripMenuItem";
-            rescanAudioToolStripMenuItem.Size = new Size(268, 34);
+            rescanAudioToolStripMenuItem.Size = new Size(270, 34);
             rescanAudioToolStripMenuItem.Text = "Rescan Audio";
             rescanAudioToolStripMenuItem.Click += rescanAudioToolStripMenuItem_Click;
             // 
@@ -266,7 +268,7 @@
             // 
             // helpToolStripMenuItem
             // 
-            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { discordServerToolStripMenuItem, aboutToolStripMenuItem });
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { discordServerToolStripMenuItem, aboutToolStripMenuItem, infoToolStripMenuItem });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             helpToolStripMenuItem.Size = new Size(65, 29);
             helpToolStripMenuItem.Text = "Help";
@@ -274,16 +276,23 @@
             // discordServerToolStripMenuItem
             // 
             discordServerToolStripMenuItem.Name = "discordServerToolStripMenuItem";
-            discordServerToolStripMenuItem.Size = new Size(229, 34);
+            discordServerToolStripMenuItem.Size = new Size(270, 34);
             discordServerToolStripMenuItem.Text = "Discord Server";
             discordServerToolStripMenuItem.Click += discordServerToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            aboutToolStripMenuItem.Size = new Size(229, 34);
+            aboutToolStripMenuItem.Size = new Size(270, 34);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
+            // 
+            // infoToolStripMenuItem
+            // 
+            infoToolStripMenuItem.Name = "infoToolStripMenuItem";
+            infoToolStripMenuItem.Size = new Size(270, 34);
+            infoToolStripMenuItem.Text = "Info";
+            infoToolStripMenuItem.Click += infoToolStripMenuItem_Click;
             // 
             // splitContainer1
             // 
@@ -496,20 +505,22 @@
             // 
             // youtubeSearchResults
             // 
+            youtubeSearchResults.AutoScroll = true;
             youtubeSearchResults.AutoSize = true;
             youtubeSearchResults.Dock = DockStyle.Fill;
             youtubeSearchResults.Location = new Point(0, 0);
             youtubeSearchResults.Name = "youtubeSearchResults";
-            youtubeSearchResults.Size = new Size(1351, 286);
+            youtubeSearchResults.Size = new Size(1351, 283);
             youtubeSearchResults.TabIndex = 2;
             // 
             // youtubeSearchTextBox
             // 
             youtubeSearchTextBox.BackColor = Color.White;
             youtubeSearchTextBox.Dock = DockStyle.Bottom;
-            youtubeSearchTextBox.Location = new Point(0, 286);
+            youtubeSearchTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            youtubeSearchTextBox.Location = new Point(0, 283);
             youtubeSearchTextBox.Name = "youtubeSearchTextBox";
-            youtubeSearchTextBox.Size = new Size(1351, 31);
+            youtubeSearchTextBox.Size = new Size(1351, 34);
             youtubeSearchTextBox.TabIndex = 0;
             youtubeSearchTextBox.KeyDown += youtubeSearchTextBox_KeyDown;
             youtubeSearchTextBox.KeyPress += youtubeSearchTextBox_KeyPress;
@@ -928,5 +939,6 @@
         private ToolStripMenuItem helpToolStripMenuItem;
         private ToolStripMenuItem discordServerToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
+        private ToolStripMenuItem infoToolStripMenuItem;
     }
 }
