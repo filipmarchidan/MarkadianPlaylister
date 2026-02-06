@@ -22,19 +22,19 @@ namespace MarkadianPlaylister
             return targetPath;
         }
 
-        public static void EnsureAllExtracted()
-        {
-            Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
-            Extract("ffmpeg.exe", ResourceDll.GetFfmpeg());
-            Extract("ffprobe.exe", ResourceDll.GetFfprobe());
-        }
+        //public static void EnsureAllExtracted()
+        //{
+        //    Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
+        //    Extract("ffmpeg.exe", ResourceDll.GetFfmpeg());
+        //    Extract("ffprobe.exe", ResourceDll.GetFfprobe());
+        //}
     }
 
-    public static class ResourceDll
-    {
-        public static byte[] GetYtDlp() => Properties.Resources.yt_dlp;
-        public static byte[] GetFfmpeg() => Properties.Resources.ffmpeg;
-        public static byte[] GetFfprobe() => Properties.Resources.ffprobe;
-    }
+    //public static class ResourceDll
+    //{
+    //    public static byte[] GetYtDlp() => Properties.Resources.yt_dlp;
+    //    public static byte[] GetFfmpeg() => Properties.Resources.ffmpeg;
+    //    public static byte[] GetFfprobe() => Properties.Resources.ffprobe;
+    //}
 
 }

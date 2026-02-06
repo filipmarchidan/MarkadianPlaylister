@@ -49,11 +49,11 @@ namespace MarkadianPlaylister
             ffmpeg = Path.Combine(markadianSettings.resourceDirectory, "ffmpeg.exe");
 
             // Only extract if missing
-            if (!File.Exists(exePath))
-                exePath = ResourceManager.Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
+            //if (!File.Exists(exePath))
+            //    exePath = ResourceManager.Extract("yt-dlp.exe", ResourceDll.GetYtDlp());
 
-            if (!File.Exists(ffmpeg))
-                ffmpeg = ResourceManager.Extract("ffmpeg.exe", ResourceDll.GetFfmpeg());
+            //if (!File.Exists(ffmpeg))
+            //    ffmpeg = ResourceManager.Extract("ffmpeg.exe", ResourceDll.GetFfmpeg());
         }
 
         public async Task handleDownloadLogic(string videoUrl)
@@ -200,11 +200,10 @@ namespace MarkadianPlaylister
             Debug.WriteLine($"URL PROVIDED ? { videoUrl}");
             // ✅ Prepare paths
             string bitRate = markadianSettings.bitRateSelector ?? "192";
-            string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory);
 
             // We’ll use yt-dlp’s built-in printing of the final filepath after postprocessing
             string outputTemplate = Path.Combine(folderPath, "%(title)s.%(ext)s");
-            string ffmpegDir = Path.GetDirectoryName(ffmpegPath);
+            string ffmpegDir = Path.GetDirectoryName(ffmpeg);
             // ✅ Build arguments — single-pass audio extraction, concurrent fragments, safe output
             string arguments =
                 $"-f bestaudio " +
@@ -221,7 +220,7 @@ namespace MarkadianPlaylister
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin", "ffmpeg.exe");
              // remove trailing backslash safely
 
-            Debug.WriteLine("PATH 1" + ffmpegPath + "  path 2" + ffmpegDir);
+            Debug.WriteLine("PATH 1" + ffmpeg + "  path 2" + ffmpegDir);
 
             var psi = new ProcessStartInfo
             {

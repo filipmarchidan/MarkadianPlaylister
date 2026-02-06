@@ -1,31 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows</TargetFramework>
-		<Nullable>enable</Nullable>
-		<UseWindowsForms>true</UseWindowsForms>
-		<ImplicitUsings>enable</ImplicitUsings>
+<PropertyGroup>
+  <OutputType>WinExe</OutputType>
+  <TargetFramework>net9.0-windows</TargetFramework>
+  <UseWindowsForms>true</UseWindowsForms>
+  <Nullable>enable</Nullable>
+  <ImplicitUsings>enable</ImplicitUsings>
 
-		<ApplicationIcon>Markadian Icon.ico</ApplicationIcon>
-		<PackageIcon>Markadian Icon.ico</PackageIcon>
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <SelfContained>true</SelfContained>
 
-		<Title>Markadian Playlister</Title>
-		<AssemblyVersion>1.0.0</AssemblyVersion>
-		<FileVersion>1.0.1</FileVersion>
-		<Copyright>Markadian Records</Copyright>
+  <PublishSingleFile>true</PublishSingleFile>
+  <PublishTrimmed>false</PublishTrimmed>
 
-		<Optimize>true</Optimize>
-		<DebugType>none</DebugType>
+  <Optimize>true</Optimize>
+  <DebugType>none</DebugType>
 
-		<PublishSingleFile>true</PublishSingleFile>
-		<SelfContained>true</SelfContained>
-		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <ApplicationIcon>Markadian Icon.ico</ApplicationIcon>
+</PropertyGroup>
 
-		<InvariantGlobalization>false</InvariantGlobalization>
-		<TieredCompilation>false</TieredCompilation>
-	</PropertyGroup>
 
 
 	<ItemGroup>
@@ -39,12 +32,6 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
-
-	<ItemGroup>
-		<TrimmerRootAssembly Include="TagLibSharp" />
-		<TrimmerRootAssembly Include="Xabe.FFmpeg" />
-		<TrimmerRootAssembly Include="YoutubeExplode" />
-	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
@@ -75,20 +62,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ffmpeg.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="ffplay.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="ffprobe.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <None Update="yt-dlp.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

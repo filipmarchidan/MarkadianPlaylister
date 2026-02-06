@@ -7,10 +7,6 @@ using System.Text.Json.Serialization;
 using System.Windows.Forms.VisualStyles;
 using TagLib.Id3v2;
 using Xabe.FFmpeg;
-using YoutubeExplode;
-using YoutubeExplode.Common;
-using YoutubeExplode.Converter;
-using YoutubeExplode.Videos.Streams;
 
 namespace MarkadianPlaylister
 {
@@ -23,17 +19,17 @@ namespace MarkadianPlaylister
         public bool locked;
         public static int songsDownloaded { get; set; }
         public static int songsEnqueued { get; set; }
-        string ffmpeg { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+        string ffmpeg { get; set; }
         string ffprobe { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffprobe.exe");
         Queue<String> videoLinks = new Queue<String>();
         string ffplay { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffplay.exe");
-        public static string exePath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
+        public static string exePath { get; set; }
 
         public String currentImagePath = null;
         public Form1()
         {
             InitializeComponent();
-            ResourceManager.EnsureAllExtracted();
+            //ResourceManager.EnsureAllExtracted();
 
 
             searchLogic.downloadLogic.ProgressChanged += (value) =>
@@ -59,10 +55,8 @@ namespace MarkadianPlaylister
                 else
                     statusQueue.Text = text;
             };
-            Debug.WriteLine("yt-dlp path: " + exePath);
-            Debug.WriteLine("ffmpeg dir: " + Path.GetDirectoryName(ffmpeg));
-            Debug.WriteLine("ffmpeg exists: " + File.Exists(ffmpeg));
-            Debug.WriteLine("ffprobe exists: " + File.Exists(Path.Combine(Path.GetDirectoryName(ffmpeg), "ffprobe.exe")));
+
+           
 
         }
 
@@ -124,6 +118,13 @@ namespace MarkadianPlaylister
                 splitContainer1.Panel2.AllowDrop = false;
             }
 
+            ffmpeg = Path.Combine(markadianSettings.resourceDirectory, "ffmpeg.exe");
+            exePath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
+
+            Console.WriteLine("yt-dlp path: " + exePath);
+            Console.WriteLine("ffmpeg dir: " + Path.GetDirectoryName(ffmpeg));
+            Console.WriteLine("ffmpeg exists: " + File.Exists(ffmpeg));
+            Console.WriteLine("ffprobe exists: " + File.Exists(Path.Combine(Path.GetDirectoryName(ffmpeg), "ffprobe.exe")));
         }
 
         public async void indexAudio(String filePath)
