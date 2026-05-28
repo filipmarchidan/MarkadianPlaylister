@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             BitRate = new ColumnHeader();
             menuStrip1 = new MenuStrip();
@@ -95,6 +96,7 @@
             pictureBox1 = new PictureBox();
             folderBrowserDialog1 = new FolderBrowserDialog();
             openFileDialog1 = new OpenFileDialog();
+            songOptionMenu = new ContextMenuStrip(components);
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -121,7 +123,6 @@
             // 
             // menuStrip1
             // 
-            menuStrip1.BackgroundImageLayout = ImageLayout.Center;
             menuStrip1.ImageScalingSize = new Size(20, 20);
             menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem, toolsToolStripMenuItem, helpToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
@@ -130,6 +131,7 @@
             menuStrip1.Size = new Size(1836, 33);
             menuStrip1.TabIndex = 0;
             menuStrip1.Text = "menuStrip1";
+            menuStrip1.ItemClicked += menuStrip1_ItemClicked;
             // 
             // fileToolStripMenuItem
             // 
@@ -141,7 +143,7 @@
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new Size(270, 34);
+            exitToolStripMenuItem.Size = new Size(141, 34);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
             // 
@@ -155,14 +157,14 @@
             // downloadLocationToolStripMenuItem
             // 
             downloadLocationToolStripMenuItem.Name = "downloadLocationToolStripMenuItem";
-            downloadLocationToolStripMenuItem.Size = new Size(270, 34);
+            downloadLocationToolStripMenuItem.Size = new Size(268, 34);
             downloadLocationToolStripMenuItem.Text = "Download Location";
             downloadLocationToolStripMenuItem.Click += downloadLocationToolStripMenuItem_Click;
             // 
             // preferencesToolStripMenuItem
             // 
             preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
-            preferencesToolStripMenuItem.Size = new Size(270, 34);
+            preferencesToolStripMenuItem.Size = new Size(268, 34);
             preferencesToolStripMenuItem.Text = "Preferences";
             preferencesToolStripMenuItem.Click += preferencesToolStripMenuItem_Click;
             // 
@@ -170,7 +172,7 @@
             // 
             themeToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { lightToolStripMenuItem, darkToolStripMenuItem });
             themeToolStripMenuItem.Name = "themeToolStripMenuItem";
-            themeToolStripMenuItem.Size = new Size(270, 34);
+            themeToolStripMenuItem.Size = new Size(268, 34);
             themeToolStripMenuItem.Text = "Theme";
             // 
             // lightToolStripMenuItem
@@ -192,7 +194,7 @@
             // rescanAudioToolStripMenuItem
             // 
             rescanAudioToolStripMenuItem.Name = "rescanAudioToolStripMenuItem";
-            rescanAudioToolStripMenuItem.Size = new Size(270, 34);
+            rescanAudioToolStripMenuItem.Size = new Size(268, 34);
             rescanAudioToolStripMenuItem.Text = "Rescan Audio";
             rescanAudioToolStripMenuItem.Click += rescanAudioToolStripMenuItem_Click;
             // 
@@ -276,21 +278,21 @@
             // discordServerToolStripMenuItem
             // 
             discordServerToolStripMenuItem.Name = "discordServerToolStripMenuItem";
-            discordServerToolStripMenuItem.Size = new Size(270, 34);
+            discordServerToolStripMenuItem.Size = new Size(229, 34);
             discordServerToolStripMenuItem.Text = "Discord Server";
             discordServerToolStripMenuItem.Click += discordServerToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            aboutToolStripMenuItem.Size = new Size(270, 34);
+            aboutToolStripMenuItem.Size = new Size(229, 34);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
             // 
             // infoToolStripMenuItem
             // 
             infoToolStripMenuItem.Name = "infoToolStripMenuItem";
-            infoToolStripMenuItem.Size = new Size(270, 34);
+            infoToolStripMenuItem.Size = new Size(229, 34);
             infoToolStripMenuItem.Text = "Info";
             infoToolStripMenuItem.Click += infoToolStripMenuItem_Click;
             // 
@@ -492,6 +494,8 @@
             listViewSongs.DragDrop += listViewSongs_DragDrop;
             listViewSongs.DragEnter += listViewSongs_DragEnter;
             listViewSongs.DragLeave += listViewSongs_DragLeave;
+            listViewSongs.DoubleClick += listViewSongs_DoubleClick;
+            listViewSongs.KeyDown += listViewSongs_KeyDown;
             // 
             // titleSongList
             // 
@@ -830,6 +834,12 @@
             // 
             openFileDialog1.FileName = "openFileDialog1";
             // 
+            // songOptionMenu
+            // 
+            songOptionMenu.ImageScalingSize = new Size(24, 24);
+            songOptionMenu.Name = "contextMenuStrip2";
+            songOptionMenu.Size = new Size(61, 4);
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
@@ -940,5 +950,6 @@
         private ToolStripMenuItem discordServerToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
         private ToolStripMenuItem infoToolStripMenuItem;
+        private ContextMenuStrip songOptionMenu;
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 
 namespace MarkadianPlaylister
@@ -13,14 +12,21 @@ namespace MarkadianPlaylister
         private static readonly string DefaultResourceDir =
             Path.Combine(BaseDir, "Resources");
 
+        // Move settings.json into {APP_FOLDER}\Properties\settings.json
         private static readonly string settingsFilePath =
-            Path.Combine(BaseDir, "settings.json");
+            Path.Combine(BaseDir, "Preferences", "settings.json");
 
         //if the file is not found then default settings will be loaded.
         public static MarkadianSettings LoadSettings()
         {
+            // Ensure settings folder exists
+            var settingsDir = Path.GetDirectoryName(settingsFilePath);
+            if (!string.IsNullOrEmpty(settingsDir) && !Directory.Exists(settingsDir))
+                Directory.CreateDirectory(settingsDir);
+
             // Ensure default resource folder exists
-            Directory.CreateDirectory(DefaultResourceDir);
+            if (!Directory.Exists(DefaultResourceDir))
+                Directory.CreateDirectory(DefaultResourceDir);
 
             var defaultSettings = new MarkadianSettings
             {
@@ -100,6 +106,11 @@ namespace MarkadianPlaylister
         //write the settings to file.
         public static void SaveSettings(MarkadianSettings settings)
         {
+            // Ensure settings folder exists before saving
+            var settingsDir = Path.GetDirectoryName(settingsFilePath);
+            if (!string.IsNullOrEmpty(settingsDir) && !Directory.Exists(settingsDir))
+                Directory.CreateDirectory(settingsDir);
+
             // Ensure resource folder exists before saving
             if (!Directory.Exists(settings.resourceDirectory))
                 Directory.CreateDirectory(settings.resourceDirectory);

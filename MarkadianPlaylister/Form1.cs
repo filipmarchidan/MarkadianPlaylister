@@ -124,6 +124,17 @@ namespace MarkadianPlaylister
                 splitContainer1.Panel2.AllowDrop = false;
             }
 
+            if (markadianSettings.theme == "Dark")
+            {
+                darkToolStripMenuItem.Checked = true;
+                lightToolStripMenuItem.Checked = false;
+            }
+            else
+            {
+                darkToolStripMenuItem.Checked = false;
+                lightToolStripMenuItem.Checked = true;
+            }
+
             ffmpeg = Path.Combine(markadianSettings.resourceDirectory, "ffmpeg.exe");
             exePath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
 
@@ -132,6 +143,35 @@ namespace MarkadianPlaylister
             Console.WriteLine("ffmpeg dir: " + Path.GetDirectoryName(ffmpeg));
             Console.WriteLine("ffmpeg exists: " + File.Exists(ffmpeg));
             Console.WriteLine("ffprobe exists: " + File.Exists(Path.Combine(Path.GetDirectoryName(ffmpeg), "ffprobe.exe")));
+
+
+
+            // Find the existing Form1_Load method and add the following near the end (after designer-setup code like ffmpeg/exePath logging)
+
+            if (songOptionMenu != null)
+            {
+                // Open in Explorer
+                if (!songOptionMenu.Items.OfType<ToolStripItem>().Any(i => i.Text == "Open in File Explorer"))
+                    songOptionMenu.Items.Add(new ToolStripMenuItem("Open in File Explorer", null, (s, ev) => OpenSelectedInExplorer()));
+
+                // Open with default player
+                if (!songOptionMenu.Items.OfType<ToolStripItem>().Any(i => i.Text == "Open With Default Music Player"))
+                    songOptionMenu.Items.Add(new ToolStripMenuItem("Open With Default Music Player", null, (s, ev) => OpenWithDefaultPlayer()));
+
+                // Separator + Delete
+                if (!songOptionMenu.Items.OfType<ToolStripItem>().Any(i => i.Text == "Delete"))
+                {
+                    songOptionMenu.Items.Add(new ToolStripSeparator());
+                    songOptionMenu.Items.Add(new ToolStripMenuItem("Delete", null, (s, ev) => DeleteSelectedSong()));
+                }
+
+                // Assign the menu to the list view
+                listViewSongs.ContextMenuStrip = songOptionMenu;
+            }
+
+            // Ensure right-click selects the item under the cursor
+            listViewSongs.MouseDown -= listViewSongs_MouseDown;
+            listViewSongs.MouseDown += listViewSongs_MouseDown;
         }
 
         //function that scans the folder for .mp3 and .wav files
@@ -240,6 +280,7 @@ namespace MarkadianPlaylister
                 return; // no selection
 
             var selectedItem = listViewSongs.SelectedItems[0];
+
 
             // Retrieve full file path stored in Tag
             string filePath = selectedItem.Tag as string;
@@ -638,44 +679,63 @@ namespace MarkadianPlaylister
                 return;
             }
 
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-
-            bool valid = files.All(f =>
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+            bool valid = files.Any(f =>
             {
+                if (string.IsNullOrEmpty(f) || !File.Exists(f)) return false;
                 string ext = Path.GetExtension(f).ToLowerInvariant();
                 return ext == ".mp3" || ext == ".wav";
             });
 
             e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
 
-            listViewSongs.BackColor = Color.FromArgb(60, 60, 65);
+            // Use theme-aware drag-over color instead of hard-coded grey
+            listViewSongs.BackColor = ThemeManager.GetDragOverColor();
+        }
+
+        //handles drag and drop functionality for metadata
+        private void listViewSongs_DragLeave(object sender, EventArgs e)
+        {
+            // Restore themed background instead of DefaultBackColor (which breaks dark theme)
+            listViewSongs.BackColor = ThemeManager.GetDefaultBackColor(listViewSongs);
         }
 
         //handles drag and drop functionality for metadata
         private void listViewSongs_DragDrop(object sender, DragEventArgs e)
         {
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
 
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
             foreach (var file in files)
             {
                 try
                 {
+                    if (string.IsNullOrEmpty(file) || !File.Exists(file))
+                        continue;
+
+                    string ext = Path.GetExtension(file).ToLowerInvariant();
+                    if (ext != ".mp3" && ext != ".wav")
+                        continue;
+
+                    // Reference only — do not copy the file
+                    string pathToAdd = file;
+
                     int bitRate = 0;
-                    string title = Path.GetFileNameWithoutExtension(file);
+                    string title = Path.GetFileNameWithoutExtension(pathToAdd);
                     var item = new ListViewItem(title);
 
-                    using (var tfile = TagLib.File.Create(file))
+                    using (var tfile = TagLib.File.Create(pathToAdd))
                     {
                         bitRate = tfile.Properties.AudioBitrate;
                         TimeSpan duration = tfile.Properties.Duration;
 
-
                         item.SubItems.Add(bitRate.ToString());
                         item.SubItems.Add(duration.ToString(@"mm\:ss"));
-                        item.Tag = file;
+                        item.Tag = pathToAdd;
 
                         listViewSongs.Items.Add(item);
-                        //listViewSongs.Items[0].Selected = true;
+                        listViewSongs.Items[listViewSongs.Items.Count - 1].Selected = true;
                     }
                 }
                 catch (Exception ex)
@@ -687,6 +747,94 @@ namespace MarkadianPlaylister
                         MessageBoxIcon.Error);
                 }
             }
+
+            // Restore themed background
+            listViewSongs.BackColor = ThemeManager.GetDefaultBackColor(listViewSongs);
+        }
+
+        //handles metadata drag and drop in the metadata panel
+
+        private void splitContainer1_Panel2_DragEnter(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+
+            bool valid = files.Any(f =>
+            {
+                if (string.IsNullOrEmpty(f) || !File.Exists(f)) return false;
+                string ext = Path.GetExtension(f).ToLowerInvariant();
+                return ext == ".mp3" || ext == ".wav";
+            });
+
+            e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
+
+            // Use theme-aware drag-over color
+            tableLayoutPanel2.BackColor = ThemeManager.GetDragOverColor();
+        }
+
+        //handles metadata drag and drop in the metadata panel
+
+        private void splitContainer1_Panel2_DragLeave(object sender, EventArgs e)
+        {
+            // Restore themed background for panel
+            tableLayoutPanel2.BackColor = ThemeManager.GetDefaultBackColor(tableLayoutPanel2);
+        }
+
+        //handles metadata drag and drop in the metadata panel
+
+        private void splitContainer1_Panel2_DragDrop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
+
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+            foreach (var file in files)
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(file) || !File.Exists(file))
+                        continue;
+
+                    string ext = Path.GetExtension(file).ToLowerInvariant();
+                    if (ext != ".mp3" && ext != ".wav")
+                        continue;
+
+                    // Reference only — do not copy the file
+                    string pathToAdd = file;
+
+                    int bitRate = 0;
+                    string title = Path.GetFileNameWithoutExtension(pathToAdd);
+                    var item = new ListViewItem(title);
+
+                    using (var tfile = TagLib.File.Create(pathToAdd))
+                    {
+                        bitRate = tfile.Properties.AudioBitrate;
+                        TimeSpan duration = tfile.Properties.Duration;
+
+                        item.SubItems.Add(bitRate.ToString());
+                        item.SubItems.Add(duration.ToString(@"mm\:ss"));
+                        item.Tag = pathToAdd;
+
+                        listViewSongs.Items.Add(item);
+                        listViewSongs.Items[listViewSongs.Items.Count - 1].Selected = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Failed to load file:\n{Path.GetFileName(file)}\n\n{ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+
+            tableLayoutPanel2.BackColor = ThemeManager.GetDefaultBackColor(tableLayoutPanel2);
         }
 
         //handles auto updates
@@ -750,432 +898,166 @@ namespace MarkadianPlaylister
             };
             System.Diagnostics.Process.Start(psi);
         }
-        //handles metadata drag and drop in the metadata panel
-        private void splitContainer1_Panel2_DragDrop(object sender, DragEventArgs e)
-        {
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
-            foreach (var file in files)
-            {
-                try
-                {
-                    int bitRate = 0;
-                    string title = Path.GetFileNameWithoutExtension(file);
-                    var item = new ListViewItem(title);
-
-                    using (var tfile = TagLib.File.Create(file))
-                    {
-                        bitRate = tfile.Properties.AudioBitrate;
-                        TimeSpan duration = tfile.Properties.Duration;
-
-
-                        item.SubItems.Add(bitRate.ToString());
-                        item.SubItems.Add(duration.ToString(@"mm\:ss"));
-                        item.Tag = file;
-
-                        listViewSongs.Items.Add(item);
-                        listViewSongs.Items[listViewSongs.Items.Count - 1].Selected = true;
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(
-                        $"Failed to load file:\n{Path.GetFileName(file)}\n\n{ex.Message}",
-                        "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                }
-            }
-        }
-        //handles metadata drag and drop in the metadata panel
-        private void splitContainer1_Panel2_DragEnter(object sender, DragEventArgs e)
-        {
-            tableLayoutPanel2.BackColor = Color.FromArgb(60, 60, 65);
-            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                e.Effect = DragDropEffects.None;
-                return;
-            }
-
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
-
-            bool valid = files.All(f =>
-                File.Exists(f) &&
-                (f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
-                 f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)));
-
-            e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
-        }
-
-        private void listViewSongs_DragLeave(object sender, EventArgs e)
-        {
-            listViewSongs.BackColor = DefaultBackColor;
-        }
-
-        private void splitContainer1_Panel2_DragLeave(object sender, EventArgs e)
-        {
-            tableLayoutPanel2.BackColor = DefaultBackColor;
-        }
 
         private void infoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Markadian Playlister v1.0.2");
+            MessageBox.Show("Markadian Playlister v1.0.3");
+        }
+
+        private void listViewSongs_DoubleClick(object sender, EventArgs e)
+        {
+            OpenSelectedInExplorer();
         }
 
 
+        private void OpenSelectedInExplorer()
+        {
+            if (listViewSongs.SelectedItems.Count == 0)
+                return;
 
+            var selectedItem = listViewSongs.SelectedItems[0];
+            string fullPath = selectedItem.Tag as string;
 
+            if (string.IsNullOrEmpty(fullPath))
+            {
+                MessageBox.Show("File path not available for the selected item.");
+                return;
+            }
 
+            if (!File.Exists(fullPath))
+            {
+                MessageBox.Show("File not found on disk.");
+                return;
+            }
 
+            try
+            {
+                var psi = new ProcessStartInfo("explorer.exe", $"/select,\"{fullPath}\"")
+                {
+                    UseShellExecute = true
+                };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to open File Explorer: {ex.Message}");
+            }
+        }
 
+        private void OpenWithDefaultPlayer()
+        {
+            if (listViewSongs.SelectedItems.Count == 0)
+                return;
 
-        //public async Task handleDownloadLogic(String videoUrl)
-        //{
-        //    videoUrl = SanitizeYoutubeUrl(videoUrl);
-        //    if (markadianSettings.enableQueue)
-        //    {
+            var selectedItem = listViewSongs.SelectedItems[0];
+            string fullPath = selectedItem.Tag as string;
 
-        //        videoLinks.Enqueue(videoUrl);
-        //        songsEnqueued++;
-        //        statusQueue.Text = songsDownloaded.ToString() + " / " + songsEnqueued.ToString() + " Songs Downloaded";
+            if (string.IsNullOrEmpty(fullPath))
+            {
+                MessageBox.Show("File path not available for the selected item.");
+                return;
+            }
 
-        //        if (videoLinks.Count == 1)
-        //        {
-        //            locked = false;
-        //            await startDownloadingWithQueue(videoLinks, filePath);
-        //        }
-        //        return;
-        //    }
-        //    else await DownloadWithYtDlp(videoUrl, filePath);
-        //}
+            if (!File.Exists(fullPath))
+            {
+                MessageBox.Show("File not found on disk.");
+                return;
+            }
 
-        //private async Task startDownloadingWithQueue(Queue<string> videoLinks, string filePath)
-        //{
+            try
+            {
+                var psi = new ProcessStartInfo(fullPath)
+                {
+                    UseShellExecute = true
+                };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to open file with default player: {ex.Message}");
+            }
+        }
 
+        private void DeleteSelectedSong()
+        {
+            if (listViewSongs.SelectedItems.Count == 0)
+                return;
 
-        //    while (videoLinks.Count > 0)
-        //    {
-        //        if (!locked)
-        //        {
-        //            string currentVideo = videoLinks.Dequeue();
-        //            await DownloadWithYtDlp(currentVideo, filePath);
-        //            locked = true;
-        //        }
+            var selectedItem = listViewSongs.SelectedItems[0];
+            string fullPath = selectedItem.Tag as string;
 
-        //    }
-        //}
+            if (string.IsNullOrEmpty(fullPath))
+            {
+                MessageBox.Show("File path not available for the selected item.");
+                return;
+            }
 
-        //private async Task DownloadWithYtDlp(string videoUrl, string folderPath)
-        //{
-        //    progressSongStatus.Value = 0;
+            if (!File.Exists(fullPath))
+            {
+                // If the file is already missing, remove from list and notify.
+                listViewSongs.Items.Remove(selectedItem);
+                MessageBox.Show("File not found on disk. Removed from list.");
+                ClearMetadataFields();
+                return;
+            }
 
-        //    // Path to yt-dlp
-        //    string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
-        //    if (!File.Exists(exePath))
-        //        throw new FileNotFoundException("yt-dlp executable not found", exePath);
+            var confirm = MessageBox.Show($"Are you sure you want to permanently delete '{Path.GetFileName(fullPath)}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (confirm != DialogResult.Yes)
+                return;
 
-        //    // Validate URL
-        //    bool IsValidYoutubeUrl(string url) =>
-        //        Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-        //        (uri.Host.Contains("youtube.com") || uri.Host.Contains("youtu.be"));
+            try
+            {
+                File.Delete(fullPath);
+                listViewSongs.Items.Remove(selectedItem);
+                ClearMetadataFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to delete file: {ex.Message}");
+            }
+        }
 
-        //    if (!IsValidYoutubeUrl(videoUrl))
-        //    {
-        //        MessageBox.Show("Not a valid YouTube URL");
-        //        return;
-        //    }
+        private void ClearMetadataFields()
+        {
+            titleText.Text = string.Empty;
+            artistText.Text = string.Empty;
+            albumText.Text = string.Empty;
+            contributingArtistText.Text = string.Empty;
+            genreText.Text = string.Empty;
+            yearText.Text = string.Empty;
+            discText.Text = string.Empty;
+            bpmText.Text = string.Empty;
+            keyText.Text = string.Empty;
+            pictureBox1.Image?.Dispose();
+            pictureBox1.Image = null;
+        }
 
-        //    // --- Step 1: Get video title ---
-        //    var titlePsi = new ProcessStartInfo
-        //    {
-        //        FileName = exePath,
-        //        Arguments = $"--get-title \"{videoUrl}\"",
-        //        RedirectStandardOutput = true,
-        //        UseShellExecute = false,
-        //        CreateNoWindow = true
-        //    };
+        private void listViewSongs_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
 
-        //    using var titleProc = Process.Start(titlePsi);
-        //    string videoTitle = (await titleProc.StandardOutput.ReadToEndAsync()).Trim();
-        //    await titleProc.WaitForExitAsync();
+            var hit = listViewSongs.HitTest(e.Location);
+            if (hit.Item != null)
+                hit.Item.Selected = true;
+        }
 
-        //    if (string.IsNullOrWhiteSpace(videoTitle))
-        //        videoTitle = "UnknownTitle";
+        private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
 
-        //    // --- Step 2: Sanitize filename ---
-        //    string MakeSafeFileName(string name)
-        //    {
-        //        foreach (char c in Path.GetInvalidFileNameChars())
-        //            name = name.Replace(c, '_');
-        //        return name;
-        //    }
+        }
 
-        //    string safeTitle = MakeSafeFileName(videoTitle);
-
-        //    // --- Step 3: Set output template and target file ---
-        //    string outputTemplate = Path.Combine(folderPath, safeTitle + ".%(ext)s");
-        //    string downloadedFile = Path.Combine(folderPath, safeTitle + ".mp3");
-        //    string tempFile = Path.Combine(folderPath, safeTitle + "_temp.mp3");
-
-        //    // --- Step 4: Download with yt-dlp ---
-        //    var psi = new ProcessStartInfo
-        //    {
-        //        FileName = exePath,
-        //        Arguments = $"-f bestaudio --no-cache-dir --extract-audio --audio-format mp3 " +
-        //                    $"--user-agent \"Mozilla/5.0\" " +
-        //                    $"--ffmpeg-location \"{Path.GetDirectoryName(ffmpeg)}\" " +
-        //                    $"-o \"{outputTemplate}\" \"{videoUrl}\"",
-        //        RedirectStandardOutput = true,
-        //        RedirectStandardError = true,
-        //        UseShellExecute = false,
-        //        CreateNoWindow = true
-        //    };
-
-        //    using var proc = Process.Start(psi);
-        //    string stdout = await proc.StandardOutput.ReadToEndAsync();
-        //    string stderr = await proc.StandardError.ReadToEndAsync();
-        //    await proc.WaitForExitAsync();
-
-        //    if (proc.ExitCode != 0 || !File.Exists(downloadedFile))
-        //    {
-        //        MessageBox.Show($"Error downloading video:\n{stderr}");
-        //        return;
-        //    }
-
-        //    // --- Step 5: FFmpeg conversion to target bitrate ---
-        //    string bitRate = markadianSettings.bitRateSelector; // default 192 kbps
-
-        //    var conversion = Xabe.FFmpeg.FFmpeg.Conversions.New()
-        //        .AddParameter($"-i \"{downloadedFile}\" -vn -ar 44100 -b:a {bitRate}k \"{tempFile}\"");
-
-        //    conversion.OnProgress += (sender, args) =>
-        //    {
-        //        progressSongStatus.Invoke((Action)(() =>
-        //        {
-        //            progressSongStatus.Value = Math.Clamp((int)args.Percent, 0, 100);
-        //        }));
-        //    };
-
-        //    await conversion.Start();
-
-        //    // --- Step 6: Replace original file safely ---
-        //    if (File.Exists(downloadedFile))
-        //        File.Delete(downloadedFile);
-
-        //    File.Move(tempFile, downloadedFile);
-
-        //    // --- Step 7: Update UI ---
-        //    MessageBox.Show($"Download complete!\nSaved as: {downloadedFile}");
-        //    statusText.Text = "Downloaded";
-
-        //    if (markadianSettings.enableQueue)
-        //    {
-        //        songsDownloaded++;
-        //        statusQueue.Text = $"{songsDownloaded} / {songsEnqueued} Songs Downloaded";
-        //    }
-        //}
-
-        //private string MakeSafeFileName(string name)
-        //{
-        //    foreach (char c in Path.GetInvalidFileNameChars())
-        //        name = name.Replace(c, '_');
-        //    return name;
-        //}
-
-        //private string SanitizeYoutubeUrl(string url)
-        //{
-        //    if (string.IsNullOrWhiteSpace(url))
-        //        return url;
-
-        //    Uri uri;
-        //    if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
-        //        return url;
-
-        //    if (uri.Host.Contains("youtu.be"))
-        //    {
-        //        // Short link: keep only up to "?"
-        //        int qIndex = url.IndexOf('?');
-        //        return qIndex != -1 ? url.Substring(0, qIndex) : url;
-        //    }
-        //    else if (uri.Host.Contains("youtube.com"))
-        //    {
-        //        // Full link: keep only up to "&"
-        //        int ampIndex = url.IndexOf('&');
-        //        return ampIndex != -1 ? url.Substring(0, ampIndex) : url;
-        //    }
-        //    MessageBox.Show("now it's" + url);
-        //    return url;
-        //}
-
-
-        //private Control CreateYoutubeResultCard(YoutubeResult result)
-        //{
-        //    var card = new Panel
-        //    {
-        //        Width = 320,
-        //        Height = 160,
-        //        BorderStyle = BorderStyle.FixedSingle,
-        //        Margin = new Padding(10),
-        //        BackColor = Color.FromArgb(45, 45, 48),
-        //        Cursor = Cursors.Hand
-        //    };
-
-        //    var thumbnail = new PictureBox
-        //    {
-        //        Width = 150,
-        //        Height = 110,
-        //        Location = new Point(8, 8),
-        //        SizeMode = PictureBoxSizeMode.StretchImage,
-        //        BorderStyle = BorderStyle.FixedSingle
-        //    };
-
-        //    try
-        //    {
-        //        using var wc = new WebClient();
-        //        byte[] imgBytes = wc.DownloadData(result.Thumbnail);
-        //        using var ms = new MemoryStream(imgBytes);
-        //        thumbnail.Image = Image.FromStream(ms);
-        //    }
-        //    catch
-        //    {
-        //        thumbnail.BackColor = Color.DarkGray;
-        //    }
-
-        //    var titleLabel = new Label
-        //    {
-        //        Text = result.Title ?? "(No Title)",
-        //        AutoSize = false,
-        //        Width = 150,
-        //        Height = 80,
-        //        Location = new Point(170, 10),
-        //        ForeColor = Color.White,
-        //        Font = new Font("Segoe UI", 9, FontStyle.Bold),
-        //        BackColor = Color.Transparent,
-        //        MaximumSize = new Size(140, 80),
-        //        AutoEllipsis = true
-        //    };
-
-        //    var durationLabel = new Label
-        //    {
-        //        Text = result.Duration ?? "Unknown",
-        //        AutoSize = false,
-        //        Width = 140,
-        //        Height = 20,
-        //        Location = new Point(170, 110),
-        //        ForeColor = Color.LightGray,
-        //        Font = new Font("Segoe UI", 8)
-        //    };
-
-        //    // Add a reusable tooltip
-        //    var tooltip = new ToolTip
-        //    {
-        //        AutoPopDelay = 3000,
-        //        InitialDelay = 500,
-        //        ReshowDelay = 200,
-        //        BackColor = Color.FromArgb(55, 55, 60),
-        //        ForeColor = Color.White
-        //    };
-
-        //    tooltip.SetToolTip(card, "Click to download");
-        //    tooltip.SetToolTip(thumbnail, "Click to download");
-        //    tooltip.SetToolTip(titleLabel, "Click to download");
-        //    tooltip.SetToolTip(durationLabel, "Click to download");
-
-        //    // Hover color feedback
-        //    card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(60, 60, 65);
-        //    card.MouseLeave += (s, e) => card.BackColor = Color.FromArgb(45, 45, 48);
-
-        //    card.Controls.Add(thumbnail);
-        //    card.Controls.Add(titleLabel);
-        //    card.Controls.Add(durationLabel);
-
-        //    // Entire card clickable
-        //    card.Click += async (s, e) => await handleDownloadLogic(result.Url);
-        //    thumbnail.Click += async (s, e) => await handleDownloadLogic(result.Url);
-        //    titleLabel.Click += async (s, e) => await handleDownloadLogic(result.Url);
-        //    durationLabel.Click += async (s, e) => await handleDownloadLogic(result.Url);
-
-        //    return card;
-        //}
-
-
-
-        //private static readonly YoutubeClient youtubeClient = new YoutubeClient();
-
-        //private async Task<List<YoutubeResult>> SearchYoutubeVideosAsync(string query)
-        //{
-        //    if (string.IsNullOrWhiteSpace(query))
-        //        return new List<YoutubeResult>();
-
-        //    try
-        //    {
-        //        var results = await youtubeClient.Search.GetVideosAsync(query).CollectAsync(5);
-
-        //        return results.Select(v => new YoutubeResult
-        //        {
-        //            Title = v.Title,
-        //            Duration = v.Duration?.ToString(@"mm\:ss") ?? "Unknown",
-        //            Thumbnail = v.Thumbnails?.GetWithHighestResolution()?.Url ?? "",
-        //            Url = v.Url
-        //        }).ToList();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Search failed: {ex.Message}");
-        //        return new List<YoutubeResult>();
-        //    }
-        //}
-
-
-        //private async Task<List<YoutubeResult>> SearchYouTubeAsyncYTDLP(string query)
-        //{
-        //    var results = new List<YoutubeResult>();
-        //    string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
-        //    if (!File.Exists(exePath))
-        //        throw new FileNotFoundException("yt-dlp executable not found", exePath);
-
-        //    var psi = new ProcessStartInfo
-        //    {
-        //        FileName = exePath,
-        //        Arguments = $"ytsearch5:\"{query}\" --dump-json --no-warnings --no-playlist --skip-download",
-        //        RedirectStandardOutput = true,
-        //        RedirectStandardError = true,
-        //        UseShellExecute = false,
-        //        CreateNoWindow = true
-        //    };
-
-        //    using (var proc = Process.Start(psi))
-        //    {
-        //        using (var reader = proc.StandardOutput)
-        //        {
-        //            while (!reader.EndOfStream && results.Count < 5)
-        //            {
-        //                var line = await reader.ReadLineAsync();
-        //                if (string.IsNullOrWhiteSpace(line))
-        //                    continue;
-
-        //                try
-        //                {
-        //                    var json = System.Text.Json.JsonDocument.Parse(line).RootElement;
-        //                    results.Add(new YoutubeResult
-        //                    {
-        //                        Title = json.GetProperty("title").GetString() ?? "",
-        //                        Duration = json.TryGetProperty("duration_string", out var d) ? d.GetString() ?? "" : "",
-        //                        Thumbnail = json.TryGetProperty("thumbnail", out var t) ? t.GetString() ?? "" : "",
-        //                        Url = json.GetProperty("webpage_url").GetString() ?? ""
-        //                    });
-        //                }
-        //                catch
-        //                {
-        //                    // skip bad line
-        //                }
-        //            }
-        //        }
-        //        await proc.WaitForExitAsync();
-        //    }
-
-        //    return results;
-        //}
+        private void listViewSongs_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(listViewSongs.SelectedItems.Count == 0)
+                return;
+            switch (e.KeyCode)
+            {
+                case Keys.Enter:
+                    OpenSelectedInExplorer();
+                    break;
+            }
+        }
     }
 
 

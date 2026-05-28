@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+﻿
 using System.Windows.Forms;
 
 namespace MarkadianPlaylister
@@ -17,6 +17,9 @@ namespace MarkadianPlaylister
         private static readonly Color DarkBackColor = Color.FromArgb(32, 32, 32);
         private static readonly Color DarkForeColor = Color.WhiteSmoke;
         private static readonly Color DarkAccentColor = Color.FromArgb(45, 45, 45);
+
+        // Keep list background fully black in dark mode
+        private static readonly Color DarkListBackColor = Color.FromArgb(50, 50, 50);
 
         public static void ApplyTheme(Control control)
         {
@@ -52,8 +55,14 @@ namespace MarkadianPlaylister
             }
             else if (control is ListView lv)
             {
-                lv.BackColor = backColor;
+                // Force a pure black background for ListView in dark theme to match design
+                lv.BackColor = CurrentTheme == AppTheme.Dark ? DarkListBackColor : backColor;
                 lv.ForeColor = foreColor;
+
+                // Improve visual consistency for details view:
+                lv.GridLines = false;
+                lv.FullRowSelect = true;
+                lv.BorderStyle = BorderStyle.None;
             }
             else if (control is TextBox tb)
             {
@@ -67,8 +76,26 @@ namespace MarkadianPlaylister
         {
             CurrentTheme = theme;
         }
+
+        // --- New helpers for drag/drop visuals ---
+
+        /// <summary>
+        /// Background color to use when a control is in drag-over state.
+        /// </summary>
+        public static Color GetDragOverColor()
+        {
+            return CurrentTheme == AppTheme.Dark ? DarkAccentColor : Color.FromArgb(230, 230, 230);
+        }
+
+        /// <summary>
+        /// Default background for controls (honors list special-case).
+        /// </summary>
+        public static Color GetDefaultBackColor(Control control)
+        {
+            if (control is ListView)
+                return CurrentTheme == AppTheme.Dark ? DarkListBackColor : LightBackColor;
+
+            return CurrentTheme == AppTheme.Dark ? DarkBackColor : LightBackColor;
+        }
     }
-
-
-
 }
