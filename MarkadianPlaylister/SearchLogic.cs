@@ -14,11 +14,16 @@ namespace MarkadianPlaylister
     //object that handles the searches on youtube.
     
     public class SearchLogic {
+        public readonly MarkadianSettings markadianSettings;
+        public DownloadLogic downloadLogic;
+        public SearchLogic(MarkadianSettings settings) {
 
-        public DownloadLogic downloadLogic = new DownloadLogic();
-        public readonly MarkadianSettings markadianSettings = SettingsManager.LoadSettings();
+            markadianSettings = settings;
+            downloadLogic = new DownloadLogic(settings);
+        }
+       
 
-
+        
         /// <summary>
         /// Create a new card to display in the UI
         /// </summary>
@@ -43,7 +48,7 @@ namespace MarkadianPlaylister
                 Location = new Point(8, 8),
                 SizeMode = PictureBoxSizeMode.StretchImage,
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.DarkGray // placeholder color
+                BackColor = Color.DarkGray
             };
 
             var titleLabel = new Label
@@ -71,6 +76,18 @@ namespace MarkadianPlaylister
                 Font = new Font("Segoe UI", 8)
             };
 
+            // ✅ Context menu for right-click
+            var contextMenu = new ContextMenuStrip();
+            var previewMenuItem = new ToolStripMenuItem("👁 Preview", null, (s, e) => ShowPreview(result));
+            var downloadMenuItem = new ToolStripMenuItem("⬇ Download", null, async (s, e) => await DownloadAsync(result));
+            contextMenu.Items.Add(previewMenuItem);
+            contextMenu.Items.Add(downloadMenuItem);
+
+            card.ContextMenuStrip = contextMenu;
+            thumbnail.ContextMenuStrip = contextMenu;
+            titleLabel.ContextMenuStrip = contextMenu;
+            durationLabel.ContextMenuStrip = contextMenu;
+
             // Tooltip
             var tooltip = new ToolTip
             {
@@ -81,10 +98,10 @@ namespace MarkadianPlaylister
                 ForeColor = Color.White
             };
 
-            tooltip.SetToolTip(card, "Click to download");
-            tooltip.SetToolTip(thumbnail, "Click to download");
-            tooltip.SetToolTip(titleLabel, "Click to download");
-            tooltip.SetToolTip(durationLabel, "Click to download");
+            tooltip.SetToolTip(card, "Left-click to download | Right-click for options");
+            tooltip.SetToolTip(thumbnail, "Left-click to download | Right-click for options");
+            tooltip.SetToolTip(titleLabel, "Left-click to download | Right-click for options");
+            tooltip.SetToolTip(durationLabel, "Left-click to download | Right-click for options");
 
             // Hover feedback
             card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(60, 60, 65);
@@ -117,7 +134,6 @@ namespace MarkadianPlaylister
                     using var ms = new MemoryStream(imgBytes);
                     var img = Image.FromStream(ms);
 
-                    // Ensure UI-thread update
                     if (thumbnail.InvokeRequired)
                         thumbnail.Invoke(() => thumbnail.Image = img);
                     else
@@ -128,8 +144,8 @@ namespace MarkadianPlaylister
                     Debug.WriteLine($"[Thumbnail Error] {ex.Message}");
                 }
             });
-            //this happens if you click on the card. Will begin downloading
-            // --- ✅ Click Handling ---
+
+            // Left-click for download
             async Task HandleDownloadAsync()
             {
                 try
@@ -150,7 +166,39 @@ namespace MarkadianPlaylister
             return card;
         }
 
+        // ✅ NEW: Show preview in player form
+        private void ShowPreview(YoutubeResult result)
+        {
+            try
+            {
+                var ytDlpPath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
+                if (!File.Exists(ytDlpPath))
+                {
+                    MessageBox.Show("yt-dlp not found. Cannot preview.", "Error");
+                    return;
+                }
 
+                var playerForm = new VideoPlayerForm(result, ytDlpPath, markadianSettings);
+                playerForm.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open preview: {ex.Message}", "Error");
+            }
+        }
+
+        // ✅ NEW: Download helper method
+        private async Task DownloadAsync(YoutubeResult result)
+        {
+            try
+            {
+                await downloadLogic.handleDownloadLogic(result.Url);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Download failed: {ex.Message}", "Error");
+            }
+        }
 
         //actual search on youtube
         private static readonly YoutubeClient youtubeClient = new YoutubeClient();
