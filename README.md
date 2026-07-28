@@ -1,4 +1,4 @@
-# Markadian Playlister
+# Markadian Playlister (1.0.4)
 
 ## How to install
 - Download the .exe file from the assets section
@@ -7,7 +7,7 @@
 - Running for the first time the application will detect if there any **dependencies** missing. If they are they will **download automatically**.
 - **A Resources folder will be created**. Don't delete that folder, otherwise the application will have to download those dependencies again.
 - The depencies will take around **100MB** so make sure you have enough space.
-- A settings file will be created in .json format. **Don't edit it manually**. You can use the preferences menu inside the application.
+- A settings file will be created in .json format in a new or already existing Preferences folder. **Don't edit it manually**. You can use the preferences menu inside the application by accessing Edit -> Preferences. Always click apply after you are done with changing the settings
 - If any file is corrupted it will be downloaded again and replaced.
 
 
