@@ -34,6 +34,8 @@ namespace MarkadianPlaylister
             settings.filePath = filePath;
             settings.resourceDirectory = resourceDirectory;
             settings.searchCount = countNumber.Value.ToString();
+            settings.videoQuality = videoQualityBox.Text;
+            settings.fileType = fileTypeBox.Text;
             SettingsManager.SaveSettings(settings);
             this.Close();
 
@@ -44,11 +46,14 @@ namespace MarkadianPlaylister
             ThemeManager.SetTheme(settings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
             ThemeManager.ApplyTheme(this);
             filePath = settings.filePath;
+            resourceDirectory = settings.resourceDirectory;
             bitRateSelector.Text = settings.bitRateSelector;
             pathDisplay.Text = "Current Path:" + settings.filePath;
             enableQueue.Checked = settings.enableQueue;
             countNumber.Value = int.Parse(settings.searchCount);
             resourceDirectoryPath.Text = "Resource Directory: " + settings.resourceDirectory;
+            videoQualityBox.Text = settings.videoQuality ?? "best";
+            fileTypeBox.Text = settings.fileType ?? "mp3";
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -65,12 +70,12 @@ namespace MarkadianPlaylister
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            folderBrowserDialog1.Description = "Select a new location for your music";
+            folderBrowserDialog1.Description = "Select a new location for your resources";
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
                 resourceDirectory = folderBrowserDialog1.SelectedPath;
-                pathDisplay.Text = filePath.ToString();
-                settings.resourceDirectory = filePath;
+                resourceDirectoryPath.Text = "Resource Directory: " + resourceDirectory;
+                settings.resourceDirectory = resourceDirectory;
             }
             else { MessageBox.Show("Not a valid path"); }
         }

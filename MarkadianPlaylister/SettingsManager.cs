@@ -36,7 +36,10 @@ namespace MarkadianPlaylister
                 theme = "Light",
                 searchCount = "5",
                 enableUpdates = true,
-                resourceDirectory = DefaultResourceDir
+                resourceDirectory = DefaultResourceDir,
+                enableDragDrop = true,
+                fileType = ".mp3",
+                videoQuality = "480p"
             };
 
             if (!File.Exists(settingsFilePath))

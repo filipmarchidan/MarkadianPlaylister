@@ -12,28 +12,36 @@ namespace MarkadianPlaylister
     public class MarkadianSettings
     {
         [JsonPropertyName("bitRate")]
-        public String bitRateSelector { get; set; }
+        required public String bitRateSelector { get; set; }
 
         [JsonPropertyName("filePath")]
-        public String filePath { get; set; }
+        required public String filePath { get; set; }
         [JsonPropertyName("enableQueue")]
-        public bool enableQueue { get; set; }
+        required public bool enableQueue { get; set; }
 
         [JsonPropertyName("theme")]
-        public string theme { get; set; }
+        required public string theme { get; set; }
 
 
         [JsonPropertyName("searchCount")]
-        public string searchCount { get; set; }
+        required public string searchCount { get; set; }
 
         [JsonPropertyName("enableUpdates")]
-        public bool enableUpdates { get; set; }
+        required public bool enableUpdates { get; set; }
 
         [JsonPropertyName("enableDragDrop")]
-        public bool enableDragDrop { get; set; }
+        required public bool enableDragDrop { get; set; }
 
 
         [JsonPropertyName("resourceDirectory")]
-        public String resourceDirectory { get; set; }
+        required public String resourceDirectory { get; set; }
+
+
+        [JsonPropertyName("fileType")]
+        required public String fileType { get; set; }
+
+        
+        [JsonPropertyName("videoQuality")]
+        required public String videoQuality { get; set; }
     }
 }

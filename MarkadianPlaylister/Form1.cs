@@ -17,7 +17,7 @@ namespace MarkadianPlaylister
          *
          */
         public MarkadianSettings markadianSettings;
-        public SearchLogic searchLogic = new SearchLogic();
+        public SearchLogic searchLogic;
         public static string filePath;
         public bool locked;
         public static int songsDownloaded { get; set; }
@@ -33,8 +33,9 @@ namespace MarkadianPlaylister
         {
             InitializeComponent();
             //ResourceManager.EnsureAllExtracted();
+            markadianSettings = SettingsManager.LoadSettings();
 
-
+            searchLogic = new SearchLogic(markadianSettings);
             //This handles the dynamic behavior for progress bars and number of songs downloaded
             searchLogic.downloadLogic.ProgressChanged += (value) =>
             {
@@ -80,7 +81,7 @@ namespace MarkadianPlaylister
 
             //load settings and initial load.
             listViewSongs.Items.Clear();
-            markadianSettings = SettingsManager.LoadSettings();
+
             ThemeManager.SetTheme(markadianSettings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
             ThemeManager.ApplyTheme(this);
             filePath = markadianSettings.filePath;
@@ -158,12 +159,15 @@ namespace MarkadianPlaylister
                 if (!songOptionMenu.Items.OfType<ToolStripItem>().Any(i => i.Text == "Open With Default Music Player"))
                     songOptionMenu.Items.Add(new ToolStripMenuItem("Open With Default Music Player", null, (s, ev) => OpenWithDefaultPlayer()));
 
+                if (!songOptionMenu.Items.OfType<ToolStripItem>().Any(i => i.Text == "Refresh"))
+                    songOptionMenu.Items.Add(new ToolStripMenuItem("Refresh", null, (s, ev) => indexAudio(filePath)));
                 // Separator + Delete
                 if (!songOptionMenu.Items.OfType<ToolStripItem>().Any(i => i.Text == "Delete"))
                 {
                     songOptionMenu.Items.Add(new ToolStripSeparator());
                     songOptionMenu.Items.Add(new ToolStripMenuItem("Delete", null, (s, ev) => DeleteSelectedSong()));
                 }
+
 
                 // Assign the menu to the list view
                 listViewSongs.ContextMenuStrip = songOptionMenu;
@@ -179,13 +183,21 @@ namespace MarkadianPlaylister
         {
             listViewSongs.Items.Clear();
             var files = Directory.GetFiles(filePath, "*.*")
-                       .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
-                                || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
+                           .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                                    || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
+            if (!showOnlymp3FilesToolStripMenuItem.Checked)
+            {
+                files = Directory.GetFiles(filePath, "*.*")
+                           .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                                    || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
+                                    || f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase));
+            }
 
             foreach (var f in files)
             {
                 int bitRate = 0;
                 string title = Path.GetFileNameWithoutExtension(f);
+                string fileType = Path.GetExtension(f).ToLowerInvariant();
                 var item = new ListViewItem(title);
                 try
                 {
@@ -197,6 +209,7 @@ namespace MarkadianPlaylister
 
                         item.SubItems.Add(bitRate.ToString());
                         item.SubItems.Add(duration.ToString(@"mm\:ss"));
+                        item.SubItems.Add(fileType);
                         item.Tag = f;
 
                         listViewSongs.Items.Add(item);
@@ -659,10 +672,7 @@ namespace MarkadianPlaylister
             }
         }
 
-        private void listViewSongs_SelectedIndexChanged_1(object sender, EventArgs e)
-        {
 
-        }
 
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -684,7 +694,9 @@ namespace MarkadianPlaylister
             {
                 if (string.IsNullOrEmpty(f) || !File.Exists(f)) return false;
                 string ext = Path.GetExtension(f).ToLowerInvariant();
-                return ext == ".mp3" || ext == ".wav";
+                if (showOnlymp3FilesToolStripMenuItem.Checked)
+                    return ext == ".mp3" || ext == ".wav" || ext == ".mp4";
+                else return ext == ".mp3" || ext == ".wav";
             });
 
             e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
@@ -1049,7 +1061,7 @@ namespace MarkadianPlaylister
 
         private void listViewSongs_KeyDown(object sender, KeyEventArgs e)
         {
-            if(listViewSongs.SelectedItems.Count == 0)
+            if (listViewSongs.SelectedItems.Count == 0)
                 return;
             switch (e.KeyCode)
             {
@@ -1057,6 +1069,13 @@ namespace MarkadianPlaylister
                     OpenSelectedInExplorer();
                     break;
             }
+        }
+
+        private void showOnlymp3FilesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+           if(!showOnlymp3FilesToolStripMenuItem.Checked) showOnlymp3FilesToolStripMenuItem.Checked = true;
+           else showOnlymp3FilesToolStripMenuItem.Checked = false;
+           indexAudio(filePath);
         }
     }
 

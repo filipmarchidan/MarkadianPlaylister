@@ -37,9 +37,9 @@ namespace MarkadianPlaylister
         public event Action<string>? DownloadCompleted;
 
 
-        public DownloadLogic()
+        public DownloadLogic(MarkadianSettings markadianSettings)
         {
-            markadianSettings = SettingsManager.LoadSettings();
+            this.markadianSettings = markadianSettings;
             filePath = markadianSettings.filePath;
             songsDownloaded = 0;
             songsEnqueued = 0;
@@ -115,27 +115,22 @@ namespace MarkadianPlaylister
                 return;
             }
             Debug.WriteLine($"URL PROVIDED ? { videoUrl}");
-            // ✅ Prepare paths
+            
+            // ✅ Get file type and quality from settings
+            string fileType = (markadianSettings.fileType ?? ".mp3").ToLowerInvariant();
+            string videoQuality = markadianSettings.videoQuality ?? "best";
             string bitRate = markadianSettings.bitRateSelector ?? "192";
 
-            // We’ll use yt-dlp’s built-in printing of the final filepath after postprocessing
+            // ✅ Prepare paths
             string outputTemplate = Path.Combine(folderPath, "%(title)s.%(ext)s");
             string ffmpegDir = Path.GetDirectoryName(ffmpeg);
-            // ✅ Build arguments — single-pass audio extraction, concurrent fragments, safe output
-            string arguments =
-                $"-f bestaudio " +
-                $"--extract-audio --audio-format mp3 --audio-quality {bitRate}K " +
-                $"--geo-bypass --geo-bypass-country US " +
-                $"--no-cache-dir --no-playlist --newline " +
-                $"--no-check-certificates --ignore-errors " +
-                $"--ffmpeg-location \"{ffmpegDir}\" " +
-                $"--concurrent-fragments 8 " +
-                $"--print after_move:filepath " +
-                $"--user-agent \"Mozilla/5.0\" " +
-                 $"-o \"{outputTemplate}\" {videoUrl}";
-
-            //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rbin", "ffmpeg.exe");
-             // remove trailing backslash safely
+            
+            // ✅ Build arguments based on file type
+            string arguments = fileType switch
+            {
+                ".mp4" or "mp4" => BuildMP4Arguments(videoQuality, outputTemplate, ffmpegDir, videoUrl),
+                ".mp3" or "mp3" or _ => BuildMP3Arguments(bitRate, outputTemplate, ffmpegDir, videoUrl)
+            };
 
             Debug.WriteLine("PATH 1" + ffmpeg + "  path 2" + ffmpegDir);
 
@@ -154,6 +149,7 @@ namespace MarkadianPlaylister
             StatusChanged?.Invoke("Downloading...");
 
             string? downloadedFilePath = null;
+            string expectedExtension = fileType.Contains("mp4") ? ".mp4" : ".mp3";
 
             using var proc = Process.Start(psi);
             if (proc == null)
@@ -177,11 +173,11 @@ namespace MarkadianPlaylister
                             ProgressChanged?.Invoke(Math.Clamp(percent, 0, 100));
                         }
                     }
-                    else if (line.StartsWith("[ExtractAudio]") || line.Contains("Destination:"))
+                    else if (line.StartsWith("[ExtractAudio]") || line.StartsWith("[Merger]") || line.Contains("Destination:"))
                     {
                         StatusChanged?.Invoke("Converting...");
                     }
-                    else if (line.Contains(".mp3") && File.Exists(line.Trim()))
+                    else if ((line.Contains(".mp3") || line.Contains(".mp4")) && File.Exists(line.Trim()))
                     {
                         downloadedFilePath = line.Trim();
                     }
@@ -207,11 +203,11 @@ namespace MarkadianPlaylister
                 return;
             }
 
-            // ✅ If yt-dlp didn’t print the file path, try to infer it
+            // ✅ If yt-dlp didn't print the file path, try to infer it
             if (string.IsNullOrWhiteSpace(downloadedFilePath))
             {
                 downloadedFilePath = Directory
-                    .EnumerateFiles(folderPath, "*.mp3", SearchOption.TopDirectoryOnly)
+                    .EnumerateFiles(folderPath, $"*{expectedExtension}", SearchOption.TopDirectoryOnly)
                     .OrderByDescending(File.GetCreationTimeUtc)
                     .FirstOrDefault();
             }
@@ -230,12 +226,60 @@ namespace MarkadianPlaylister
             DownloadCompleted?.Invoke(downloadedFilePath);
 
             Form1 tempForm = (Form1)Application.OpenForms["Form1"];
-          //  tempForm.lis
             tempForm.indexAudio(filePath);
         }
 
+        /// <summary>
+        /// Builds yt-dlp arguments for MP3 audio extraction
+        /// </summary>
+        private string BuildMP3Arguments(string bitRate, string outputTemplate, string ffmpegDir, string videoUrl)
+        {
+            MessageBox.Show("selected mp3");
+            return
+                $"-f bestaudio " +
+                $"--extract-audio --audio-format mp3 --audio-quality {bitRate}K " +
+                $"--geo-bypass --geo-bypass-country US " +
+                $"--no-cache-dir --no-playlist --newline " +
+                $"--no-check-certificates --ignore-errors " +
+                $"--ffmpeg-location \"{ffmpegDir}\" " +
+                $"--concurrent-fragments 8 " +
+                $"--print after_move:filepath " +
+                $"--user-agent \"Mozilla/5.0\" " +
+                $"-o \"{outputTemplate}\" {videoUrl}";
+        }
 
+        /// <summary>
+        /// Builds yt-dlp arguments for MP4 video download with quality selection
+        /// </summary>
+        private string BuildMP4Arguments(string videoQuality, string outputTemplate, string ffmpegDir, string videoUrl)
+        {
+            MessageBox.Show("selected mp4");
+            // Map quality settings to yt-dlp format specifiers
+            // videoQuality could be "best", "1080", "720", "480", "360", "240", "144"
+            string formatSpecifier = videoQuality?.ToLowerInvariant() switch
+            {
+                
+                "best" => "best[ext=mp4]",
+                "1080" or "1080p" => "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+                "720" or "720p" => "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+                "480" or "480p" => "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+                "360" or "360p" => "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+                "240" or "240p" => "bestvideo[height<=240][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+                "144" or "144p" => "bestvideo[height<=144][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+                _ => "best[ext=mp4]"
+            };
 
+            return
+                $"-f \"{formatSpecifier}\" " +
+                $"--geo-bypass --geo-bypass-country US " +
+                $"--no-cache-dir --no-playlist --newline " +
+                $"--no-check-certificates --ignore-errors " +
+                $"--ffmpeg-location \"{ffmpegDir}\" " +
+                $"--concurrent-fragments 8 " +
+                $"--print after_move:filepath " +
+                $"--user-agent \"Mozilla/5.0\" " +
+                $"-o \"{outputTemplate}\" {videoUrl}";
+        }
 
         private string MakeSafeFileName(string name)
         {
