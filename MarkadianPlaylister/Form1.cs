@@ -913,7 +913,7 @@ namespace MarkadianPlaylister
 
         private void infoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Markadian Playlister v1.0.3");
+            MessageBox.Show("Markadian Playlister v1.0.4");
         }
 
         private void listViewSongs_DoubleClick(object sender, EventArgs e)
