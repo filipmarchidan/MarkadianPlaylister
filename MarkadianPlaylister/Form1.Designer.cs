@@ -50,7 +50,6 @@
             enableAutomaticUpdatesToolStripMenuItem = new ToolStripMenuItem();
             enabToolStripMenuItem = new ToolStripMenuItem();
             showOnlymp3FilesToolStripMenuItem = new ToolStripMenuItem();
-            openPreviewInADifferentWindowToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             discordServerToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
@@ -248,7 +247,7 @@
             // 
             // toolsToolStripMenuItem
             // 
-            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { enableAutomaticUpdatesToolStripMenuItem, enabToolStripMenuItem, showOnlymp3FilesToolStripMenuItem, openPreviewInADifferentWindowToolStripMenuItem });
+            toolsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { enableAutomaticUpdatesToolStripMenuItem, enabToolStripMenuItem, showOnlymp3FilesToolStripMenuItem });
             toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             toolsToolStripMenuItem.Size = new Size(69, 29);
             toolsToolStripMenuItem.Text = "Tools";
@@ -258,7 +257,7 @@
             enableAutomaticUpdatesToolStripMenuItem.Checked = true;
             enableAutomaticUpdatesToolStripMenuItem.CheckState = CheckState.Checked;
             enableAutomaticUpdatesToolStripMenuItem.Name = "enableAutomaticUpdatesToolStripMenuItem";
-            enableAutomaticUpdatesToolStripMenuItem.Size = new Size(396, 34);
+            enableAutomaticUpdatesToolStripMenuItem.Size = new Size(324, 34);
             enableAutomaticUpdatesToolStripMenuItem.Text = "Enable Automatic Updates";
             enableAutomaticUpdatesToolStripMenuItem.Click += enableAutomaticUpdatesToolStripMenuItem_Click;
             // 
@@ -267,7 +266,7 @@
             enabToolStripMenuItem.Checked = true;
             enabToolStripMenuItem.CheckState = CheckState.Checked;
             enabToolStripMenuItem.Name = "enabToolStripMenuItem";
-            enabToolStripMenuItem.Size = new Size(396, 34);
+            enabToolStripMenuItem.Size = new Size(324, 34);
             enabToolStripMenuItem.Text = "Drag and Drop Files";
             enabToolStripMenuItem.Click += enabToolStripMenuItem_Click;
             // 
@@ -276,17 +275,9 @@
             showOnlymp3FilesToolStripMenuItem.Checked = true;
             showOnlymp3FilesToolStripMenuItem.CheckState = CheckState.Checked;
             showOnlymp3FilesToolStripMenuItem.Name = "showOnlymp3FilesToolStripMenuItem";
-            showOnlymp3FilesToolStripMenuItem.Size = new Size(396, 34);
+            showOnlymp3FilesToolStripMenuItem.Size = new Size(324, 34);
             showOnlymp3FilesToolStripMenuItem.Text = "Show only audio files";
             showOnlymp3FilesToolStripMenuItem.Click += showOnlymp3FilesToolStripMenuItem_Click;
-            // 
-            // openPreviewInADifferentWindowToolStripMenuItem
-            // 
-            openPreviewInADifferentWindowToolStripMenuItem.Checked = true;
-            openPreviewInADifferentWindowToolStripMenuItem.CheckState = CheckState.Checked;
-            openPreviewInADifferentWindowToolStripMenuItem.Name = "openPreviewInADifferentWindowToolStripMenuItem";
-            openPreviewInADifferentWindowToolStripMenuItem.Size = new Size(396, 34);
-            openPreviewInADifferentWindowToolStripMenuItem.Text = "Open preview in a different window";
             // 
             // helpToolStripMenuItem
             // 
@@ -298,21 +289,21 @@
             // discordServerToolStripMenuItem
             // 
             discordServerToolStripMenuItem.Name = "discordServerToolStripMenuItem";
-            discordServerToolStripMenuItem.Size = new Size(270, 34);
+            discordServerToolStripMenuItem.Size = new Size(229, 34);
             discordServerToolStripMenuItem.Text = "Discord Server";
             discordServerToolStripMenuItem.Click += discordServerToolStripMenuItem_Click;
             // 
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            aboutToolStripMenuItem.Size = new Size(270, 34);
+            aboutToolStripMenuItem.Size = new Size(229, 34);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
             // 
             // infoToolStripMenuItem
             // 
             infoToolStripMenuItem.Name = "infoToolStripMenuItem";
-            infoToolStripMenuItem.Size = new Size(270, 34);
+            infoToolStripMenuItem.Size = new Size(229, 34);
             infoToolStripMenuItem.Text = "Info";
             infoToolStripMenuItem.Click += infoToolStripMenuItem_Click;
             // 
@@ -977,6 +968,5 @@
         private ContextMenuStrip songOptionMenu;
         private ColumnHeader fileExtension;
         private ToolStripMenuItem showOnlymp3FilesToolStripMenuItem;
-        private ToolStripMenuItem openPreviewInADifferentWindowToolStripMenuItem;
     }
 }

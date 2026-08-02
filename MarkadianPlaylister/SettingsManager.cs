@@ -39,7 +39,8 @@ namespace MarkadianPlaylister
                 resourceDirectory = DefaultResourceDir,
                 enableDragDrop = true,
                 fileType = ".mp3",
-                videoQuality = "480p"
+                videoQuality = "480p",
+                enableVideoPlayback = false
             };
 
             if (!File.Exists(settingsFilePath))

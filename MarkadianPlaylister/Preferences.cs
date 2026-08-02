@@ -36,9 +36,18 @@ namespace MarkadianPlaylister
             settings.searchCount = countNumber.Value.ToString();
             settings.videoQuality = videoQualityBox.Text;
             settings.fileType = fileTypeBox.Text;
+            settings.enableVideoPlayback = enableVideo.Checked;
             SettingsManager.SaveSettings(settings);
+            checkVideoComponents();
             this.Close();
 
+        }
+
+        private async Task checkVideoComponents() {
+            if (settings.enableVideoPlayback == true)
+            { 
+                await ResourceUpdater.EnsureLibVlcAsync(Path.Combine(settings.resourceDirectory, "VLC"));
+            }
         }
 
         private void Preferences_Load(object sender, EventArgs e)
@@ -54,6 +63,7 @@ namespace MarkadianPlaylister
             resourceDirectoryPath.Text = "Resource Directory: " + settings.resourceDirectory;
             videoQualityBox.Text = settings.videoQuality ?? "best";
             fileTypeBox.Text = settings.fileType ?? "mp3";
+            enableVideo.Checked = settings.enableVideoPlayback;
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -78,6 +88,11 @@ namespace MarkadianPlaylister
                 settings.resourceDirectory = resourceDirectory;
             }
             else { MessageBox.Show("Not a valid path"); }
+        }
+
+        private void enableVideo_CheckedChanged(object sender, EventArgs e)
+        {
+      
         }
     }
 }

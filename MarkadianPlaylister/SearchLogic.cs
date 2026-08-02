@@ -169,6 +169,10 @@ namespace MarkadianPlaylister
         // ✅ NEW: Show preview in player form
         private void ShowPreview(YoutubeResult result)
         {
+            if (markadianSettings.enableVideoPlayback == false) { 
+                MessageBox.Show("Video playback is disabled in settings. Go to settings and enable it.", "Info");
+                return;
+            }
             try
             {
                 var ytDlpPath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
