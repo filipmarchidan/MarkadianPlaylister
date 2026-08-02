@@ -1,18 +1,22 @@
 ﻿using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
+using System.Data;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace MarkadianPlaylister
 {
     public partial class VideoPlayerForm : Form
     {
         private readonly YoutubeResult youtubeResult;
+        private readonly MarkadianSettings markadianSettings;
         private readonly StreamLogic streamLogic;
         private LibVLC libVLC;
         private VideoView videoView;
         private bool isUserDraggingSlider = false;
         private bool isPlaying = false;
         private Label hoverTimeLabel;
+       
 
         public VideoPlayerForm(YoutubeResult result, string ytDlpPath, MarkadianSettings settings)
         {
@@ -21,6 +25,7 @@ namespace MarkadianPlaylister
             streamLogic = new StreamLogic(ytDlpPath, settings);
             this.Text = result.Title ?? "Video Player";
             this.Icon = SystemIcons.Application;
+            markadianSettings = settings;
         }
 
         private void VideoPlayerForm_Load(object sender, EventArgs e)
@@ -31,7 +36,7 @@ namespace MarkadianPlaylister
 
                 // Initialize LibVLC
                 Core.Initialize();
-                libVLC = new LibVLC();
+                libVLC = new LibVLC(Path.Combine(markadianSettings.resourceDirectory, "VLC"));
 
                 // Create VideoView for the videoPanel
                 videoView = new VideoView

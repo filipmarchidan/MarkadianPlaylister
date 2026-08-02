@@ -45,6 +45,7 @@
             label4 = new Label();
             videoQualityBox = new ComboBox();
             bitRateSelector = new ComboBox();
+            enableVideo = new CheckBox();
             folderBrowserDialog1 = new FolderBrowserDialog();
             tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)countNumber).BeginInit();
@@ -70,6 +71,7 @@
             tableLayoutPanel1.Controls.Add(label4, 0, 6);
             tableLayoutPanel1.Controls.Add(videoQualityBox, 1, 6);
             tableLayoutPanel1.Controls.Add(bitRateSelector, 1, 0);
+            tableLayoutPanel1.Controls.Add(enableVideo, 1, 2);
             tableLayoutPanel1.Dock = DockStyle.Fill;
             tableLayoutPanel1.Location = new Point(0, 0);
             tableLayoutPanel1.Margin = new Padding(4);
@@ -260,6 +262,18 @@
             bitRateSelector.Sorted = true;
             bitRateSelector.TabIndex = 2;
             // 
+            // enableVideo
+            // 
+            enableVideo.AutoSize = true;
+            enableVideo.Dock = DockStyle.Fill;
+            enableVideo.Location = new Point(503, 142);
+            enableVideo.Name = "enableVideo";
+            enableVideo.Size = new Size(494, 64);
+            enableVideo.TabIndex = 17;
+            enableVideo.Text = "Enable Video Playback Streaming";
+            enableVideo.UseVisualStyleBackColor = true;
+            enableVideo.CheckedChanged += enableVideo_CheckedChanged;
+            // 
             // Preferences
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
@@ -296,5 +310,6 @@
         private ComboBox fileTypeBox;
         private Label label4;
         private ComboBox videoQualityBox;
+        private CheckBox enableVideo;
     }
 }

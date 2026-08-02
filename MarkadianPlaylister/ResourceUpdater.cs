@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -25,6 +26,13 @@ namespace MarkadianPlaylister
             Path.Combine(Path.GetTempPath(), "MarkadianUpdater");
 
 
+        private const string LIBVLC_X64_DOWNLOAD =
+    "https://github.com/filipmarchidan/MarkadianPlaylister/releases/download/libVLC-dependency/libvlc-3.0.23-win-x64.zip";
+
+      private const string LIBVLC_ARM64_DOWNLOAD =
+            "https://github.com/filipmarchidan/MarkadianPlaylister/releases/download/libVLC-dependency/libvlc-3.0.23-win-x64.zip";
+
+
         private static bool enableUpdates;
         public static async Task EnsureResourcesAsync()
         {
@@ -39,13 +47,14 @@ namespace MarkadianPlaylister
             enableUpdates = settings.enableUpdates;
             await EnsureYtDlpAsync(ytPath);
             await EnsureFfmpegAsync(ffmpegPath);
+            await EnsureLibVlcAsync(Path.Combine(resourceDir, "VLC"));
         }
 
         // ================= YT-DLP =================
 
         private static async Task EnsureYtDlpAsync(string ytPath)
         {
-            if (!File.Exists(ytPath))
+             if (!File.Exists(ytPath))
             {
                 await DownloadFileAsync(YTDLP_DOWNLOAD, ytPath);
                 MessageBox.Show("Dependency yt-dlp not found. It will be downloaded now");
@@ -73,6 +82,52 @@ namespace MarkadianPlaylister
 
                     ReplaceFile(tempFile, ytPath);
                 }
+            }
+        }
+
+
+        public static async Task EnsureLibVlcAsync(string vlcDir)
+        {
+            if (SettingsManager.LoadSettings().enableVideoPlayback == false) return;
+            
+            bool installed =
+                File.Exists(Path.Combine(vlcDir, "libvlc.dll"))
+                &&
+                File.Exists(Path.Combine(vlcDir, "libvlccore.dll"))
+                &&
+                Directory.Exists(Path.Combine(vlcDir, "plugins"));
+
+            if (installed)
+                return;
+
+            try { 
+
+            Directory.CreateDirectory(vlcDir);
+
+            MessageBox.Show(
+                "Video playback components are missing.\nThey will now be downloaded.");
+
+            string url =
+                RuntimeInformation.ProcessArchitecture ==
+                Architecture.Arm64
+                    ? LIBVLC_ARM64_DOWNLOAD
+                    : LIBVLC_X64_DOWNLOAD;
+
+            string zip =
+                Path.Combine(TempDir, "libvlc.zip");
+
+            await DownloadFileAsync(url, zip);
+
+            ZipFile.ExtractToDirectory(
+                zip,
+                vlcDir,
+                true);
+
+            File.Delete(zip);
+            MessageBox.Show("Video Resources downloaded successfully.");
+            }
+            catch {
+                MessageBox.Show("Video Resources could not be downloaded.");
             }
         }
 

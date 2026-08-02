@@ -1073,9 +1073,14 @@ namespace MarkadianPlaylister
 
         private void showOnlymp3FilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-           if(!showOnlymp3FilesToolStripMenuItem.Checked) showOnlymp3FilesToolStripMenuItem.Checked = true;
-           else showOnlymp3FilesToolStripMenuItem.Checked = false;
-           indexAudio(filePath);
+            if (!showOnlymp3FilesToolStripMenuItem.Checked) showOnlymp3FilesToolStripMenuItem.Checked = true;
+            else showOnlymp3FilesToolStripMenuItem.Checked = false;
+            indexAudio(filePath);
+        }
+
+        private void openPreviewInADifferentWindowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
     }
 

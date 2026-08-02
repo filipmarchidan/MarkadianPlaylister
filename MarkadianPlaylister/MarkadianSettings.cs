@@ -43,5 +43,8 @@ namespace MarkadianPlaylister
         
         [JsonPropertyName("videoQuality")]
         required public String videoQuality { get; set; }
+
+        [JsonPropertyName("enableVideoPlayback")]
+        required public bool enableVideoPlayback { get; set; }
     }
 }
