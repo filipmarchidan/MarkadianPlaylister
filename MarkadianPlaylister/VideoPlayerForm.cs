@@ -16,7 +16,6 @@ namespace MarkadianPlaylister
         private bool isUserDraggingSlider = false;
         private bool isPlaying = false;
         private Label hoverTimeLabel;
-       
 
         public VideoPlayerForm(YoutubeResult result, string ytDlpPath, MarkadianSettings settings)
         {
@@ -28,15 +27,33 @@ namespace MarkadianPlaylister
             markadianSettings = settings;
         }
 
-        private void VideoPlayerForm_Load(object sender, EventArgs e)
+        private async void VideoPlayerForm_Load(object sender, EventArgs e)
         {
             try
             {
+                ShowStatus("⏳ Ensuring video resources...", Color.Yellow);
+
+                // Step 1: Ensure all resources are downloaded/extracted
+                await ResourceUpdater.EnsureResourcesAsync();
+
                 ShowStatus("⏳ Loading stream...", Color.Yellow);
 
-                // Initialize LibVLC
-                Core.Initialize();
-                libVLC = new LibVLC(Path.Combine(markadianSettings.resourceDirectory, "VLC"));
+                // Step 2: Get the VLC directory path
+                string vlcPath = Path.Combine(markadianSettings.resourceDirectory, "VLC");
+
+                // Step 3: Verify VLC files exist
+                if (!Directory.Exists(vlcPath) || 
+                    !File.Exists(Path.Combine(vlcPath, "libvlc.dll")) ||
+                    !File.Exists(Path.Combine(vlcPath, "libvlccore.dll")))
+                {
+                    throw new Exception($"LibVLC files not found in {vlcPath}. Please check that video resources were downloaded correctly.");
+                }
+
+                // Step 4: Initialize Core with VLC path
+                Core.Initialize(vlcPath);
+
+                // Step 5: Create LibVLC instance (without path parameter)
+                libVLC = new LibVLC();
 
                 // Create VideoView for the videoPanel
                 videoView = new VideoView
@@ -48,10 +65,9 @@ namespace MarkadianPlaylister
                 videoPanel.Controls.Clear();
                 videoPanel.Controls.Add(timeBar);
                 videoPanel.Controls.Add(videoView);
-            
+
                 timeBar.Dock = DockStyle.Bottom;
                 videoView.Dock = DockStyle.Fill;
-                // Create hover time label for trackbar
 
                 videoView.SendToBack();
                 timeBar.BringToFront();
