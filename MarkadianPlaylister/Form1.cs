@@ -20,6 +20,7 @@ namespace MarkadianPlaylister
         public SearchLogic searchLogic;
         public static string filePath;
         public bool locked;
+        public ToolTip toolTip;
         public static int songsDownloaded { get; set; }
         public static int songsEnqueued { get; set; }
         string ffmpeg { get; set; }
@@ -62,6 +63,15 @@ namespace MarkadianPlaylister
             };
 
 
+            // Tooltip
+            this.toolTip = new ToolTip
+            {
+                AutoPopDelay = 3000,
+                InitialDelay = 500,
+                ReshowDelay = 200,
+                BackColor = Color.FromArgb(55, 55, 60),
+                ForeColor = Color.White
+            };
 
         }
 
@@ -78,10 +88,11 @@ namespace MarkadianPlaylister
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            youtubeSearchTextBox.Select();
             //load settings and initial load.
             listViewSongs.Items.Clear();
-
+           
+            
             ThemeManager.SetTheme(markadianSettings.theme == "Dark" ? AppTheme.Dark : AppTheme.Light);
             ThemeManager.ApplyTheme(this);
             filePath = markadianSettings.filePath;
@@ -138,7 +149,10 @@ namespace MarkadianPlaylister
 
             ffmpeg = Path.Combine(markadianSettings.resourceDirectory, "ffmpeg.exe");
             exePath = Path.Combine(markadianSettings.resourceDirectory, "yt-dlp.exe");
-
+            statusDownloadType.Text = markadianSettings.fileType.ToString();
+            statusDownloadType.ForeColor = Color.DarkOliveGreen;
+            toolTip.SetToolTip(statusDownloadType, "Current download type: " + markadianSettings.fileType.ToString() + ". To change the file type go to preferences.");
+            toolTip.SetToolTip(youtubeSearchResults, "Left-click to download | Right-click for options");
             //for debug only. Check dependencies
             Console.WriteLine("yt-dlp path: " + exePath);
             Console.WriteLine("ffmpeg dir: " + Path.GetDirectoryName(ffmpeg));
@@ -519,6 +533,7 @@ namespace MarkadianPlaylister
         //handles searches in youtube
         private async void youtubeSearchButton_Click(object sender, EventArgs e)
         {
+            
             string query = youtubeSearchTextBox.Text;
             if (string.IsNullOrEmpty(query))
             {
