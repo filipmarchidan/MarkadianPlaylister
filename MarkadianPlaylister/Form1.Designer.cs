@@ -57,6 +57,8 @@
             splitContainer1 = new SplitContainer();
             splitContainer2 = new SplitContainer();
             bottomNavigator = new SplitContainer();
+            statusDownloadType = new Label();
+            statusDownloadTypeText = new Label();
             tableLayoutPanel1 = new TableLayoutPanel();
             statusQueue = new Label();
             queueStatus = new Label();
@@ -361,6 +363,8 @@
             // 
             // bottomNavigator.Panel1
             // 
+            bottomNavigator.Panel1.Controls.Add(statusDownloadType);
+            bottomNavigator.Panel1.Controls.Add(statusDownloadTypeText);
             bottomNavigator.Panel1.Controls.Add(tableLayoutPanel1);
             bottomNavigator.Panel1.Controls.Add(pathDisplay);
             bottomNavigator.Panel1.Controls.Add(statusText);
@@ -375,6 +379,25 @@
             bottomNavigator.SplitterDistance = 217;
             bottomNavigator.SplitterWidth = 5;
             bottomNavigator.TabIndex = 0;
+            // 
+            // statusDownloadType
+            // 
+            statusDownloadType.AutoSize = true;
+            statusDownloadType.ForeColor = Color.DarkOrange;
+            statusDownloadType.Location = new Point(239, 0);
+            statusDownloadType.Name = "statusDownloadType";
+            statusDownloadType.Size = new Size(61, 25);
+            statusDownloadType.TabIndex = 7;
+            statusDownloadType.Text = "NONE";
+            // 
+            // statusDownloadTypeText
+            // 
+            statusDownloadTypeText.AutoSize = true;
+            statusDownloadTypeText.Location = new Point(173, 0);
+            statusDownloadTypeText.Name = "statusDownloadTypeText";
+            statusDownloadTypeText.Size = new Size(60, 25);
+            statusDownloadTypeText.TabIndex = 6;
+            statusDownloadTypeText.Text = "Status";
             // 
             // tableLayoutPanel1
             // 
@@ -968,5 +991,7 @@
         private ContextMenuStrip songOptionMenu;
         private ColumnHeader fileExtension;
         private ToolStripMenuItem showOnlymp3FilesToolStripMenuItem;
+        private Label statusDownloadTypeText;
+        private Label statusDownloadType;
     }
 }

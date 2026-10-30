@@ -234,7 +234,7 @@ namespace MarkadianPlaylister
         /// </summary>
         private string BuildMP3Arguments(string bitRate, string outputTemplate, string ffmpegDir, string videoUrl)
         {
-            MessageBox.Show("selected mp3");
+            //MessageBox.Show("selected mp3");
             return
                 $"-f bestaudio " +
                 $"--extract-audio --audio-format mp3 --audio-quality {bitRate}K " +
@@ -253,7 +253,7 @@ namespace MarkadianPlaylister
         /// </summary>
         private string BuildMP4Arguments(string videoQuality, string outputTemplate, string ffmpegDir, string videoUrl)
         {
-            MessageBox.Show("selected mp4");
+            //MessageBox.Show("selected mp4");
             // Map quality settings to yt-dlp format specifiers
             // videoQuality could be "best", "1080", "720", "480", "360", "240", "144"
             string formatSpecifier = videoQuality?.ToLowerInvariant() switch

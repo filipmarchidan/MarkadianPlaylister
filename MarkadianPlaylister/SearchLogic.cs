@@ -99,9 +99,9 @@ namespace MarkadianPlaylister
             };
 
             tooltip.SetToolTip(card, "Left-click to download | Right-click for options");
-            tooltip.SetToolTip(thumbnail, "Left-click to download | Right-click for options");
-            tooltip.SetToolTip(titleLabel, "Left-click to download | Right-click for options");
-            tooltip.SetToolTip(durationLabel, "Left-click to download | Right-click for options");
+            tooltip.SetToolTip(thumbnail, titleLabel.Text + " | " + durationLabel.Text);
+            tooltip.SetToolTip(titleLabel, titleLabel.Text + " | " + durationLabel.Text);
+            tooltip.SetToolTip(durationLabel, titleLabel.Text + " | " + durationLabel.Text);
 
             // Hover feedback
             card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(60, 60, 65);
@@ -229,57 +229,6 @@ namespace MarkadianPlaylister
                 MessageBox.Show($"Search failed: {ex.Message}");
                 return new List<YoutubeResult>();
             }
-        }
-
-        //deprecated method. Will be fully removed in future releases
-        private async Task<List<YoutubeResult>> SearchYouTubeAsyncYTDLP(string query)
-        {
-            var results = new List<YoutubeResult>();
-            string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt-dlp.exe");
-            if (!File.Exists(exePath))
-                throw new FileNotFoundException("yt-dlp executable not found", exePath);
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = $"ytsearch5:\"{query}\" --dump-json --no-warnings --no-playlist --skip-download",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using (var proc = Process.Start(psi))
-            {
-                using (var reader = proc.StandardOutput)
-                {
-                    while (!reader.EndOfStream && results.Count < 5)
-                    {
-                        var line = await reader.ReadLineAsync();
-                        if (string.IsNullOrWhiteSpace(line))
-                            continue;
-
-                        try
-                        {
-                            var json = System.Text.Json.JsonDocument.Parse(line).RootElement;
-                            results.Add(new YoutubeResult
-                            {
-                                Title = json.GetProperty("title").GetString() ?? "",
-                                Duration = json.TryGetProperty("duration_string", out var d) ? d.GetString() ?? "" : "",
-                                Thumbnail = json.TryGetProperty("thumbnail", out var t) ? t.GetString() ?? "" : "",
-                                Url = json.GetProperty("webpage_url").GetString() ?? ""
-                            });
-                        }
-                        catch
-                        {
-                            // skip bad line
-                        }
-                    }
-                }
-                await proc.WaitForExitAsync();
-            }
-
-            return results;
         }
     }
 }
