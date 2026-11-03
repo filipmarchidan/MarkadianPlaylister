@@ -3,6 +3,7 @@ using LibVLCSharp.WinForms;
 using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using static MarkadianPlaylister.StreamLogic;
 
 namespace MarkadianPlaylister
 {
@@ -143,30 +144,44 @@ namespace MarkadianPlaylister
                 Debug.WriteLine($"Getting stream URL for: {youtubeResult.Url}");
 
                 // Get streaming URL
-                string streamUrl = await streamLogic.GetStreamUrlAsync(youtubeResult.Url, preferVideo: true);
-                Debug.WriteLine($"Stream URL obtained successfully");
 
-                if (string.IsNullOrWhiteSpace(streamUrl))
-                {
-                    throw new Exception("Stream URL is empty");
-                }
+                StreamUrls streams =
+                    await streamLogic.GetVideoStreamsAsync(
+                        youtubeResult.Url);
 
-                ShowStatus("✓ Stream ready to play", Color.LimeGreen);
+                using var media = new Media(
+                    libVLC,
+                    streams.VideoUrl,
+                    FromType.FromLocation);
 
-                // Create and play media
-                var media = new Media(libVLC, streamUrl, FromType.FromLocation);
                 media.AddOption(":network-caching=5000");
-                media.AddOption(":file-caching=5000");
 
-                if (videoView?.MediaPlayer != null)
+                if (!string.IsNullOrWhiteSpace(streams.AudioUrl))
                 {
-                    videoView.MediaPlayer.Play(media);
-                    isPlaying = true;
-                    pauseButton.Text = "⏸ Pause";
-                    playButton.Text = "▶ Play";
+                    bool attached = media.AddSlave(
+                        MediaSlaveType.Audio,
+                        4,
+                        streams.AudioUrl);
 
-                    Debug.WriteLine("Playback started successfully");
+                    if (!attached)
+                        throw new Exception(
+                            "Could not attach the audio stream.");
                 }
+
+                if (videoView?.MediaPlayer == null)
+                    throw new Exception("Media player is unavailable.");
+
+                bool started = videoView.MediaPlayer.Play(media);
+
+                if (!started)
+                    throw new Exception("LibVLC could not start playback.");
+
+                isPlaying = true;
+                pauseButton.Text = "⏸ Pause";
+                playButton.Text = "▶ Play";
+
+                ShowStatus("✓ Playback started", Color.LimeGreen);
+
             }
             catch (Exception ex)
             {

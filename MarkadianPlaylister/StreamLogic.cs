@@ -16,63 +16,97 @@ namespace MarkadianPlaylister
             exePath = ytDlpPath;
         }
 
-        /// <summary>
-        /// Gets a direct streaming URL for audio/video without downloading to disk
-        /// </summary>
-        public async Task<string> GetStreamUrlAsync(string youtubeUrl, bool preferVideo = true)
+
+        public record StreamUrls(string VideoUrl, string? AudioUrl);
+
+        public async Task<StreamUrls> GetVideoStreamsAsync(
+            string youtubeUrl)
         {
             if (!File.Exists(exePath))
-                throw new FileNotFoundException("yt-dlp executable not found", exePath);
+                throw new FileNotFoundException(
+                    "yt-dlp executable not found", exePath);
 
-            // For LibVLC streaming, we need to use yt-dlp's --print-json option
-            // and let it handle the format selection internally
-            string qualityFormat = markadianSettings.videoQuality?.ToLowerInvariant() switch
+            int? height = markadianSettings.videoQuality?
+                .ToLowerInvariant() switch
             {
-                "best" => "18", // 720p MP4 with audio (best balance)
-                "1080" or "1080p" => "22", // 1080p (if available)
-                "720" or "720p" => "18", // 720p MP4
-                "480" or "480p" => "135", // 480p video + 251 audio
-                "360" or "360p" => "18", // 360p
-                "240" or "240p" => "17", // 240p
-                "144" or "144p" => "17", // 144p
-                _ => "18" // Default to 720p with audio
+                "1080" or "1080p" => 1080,
+                "720" or "720p" => 720,
+                "480" or "480p" => 480,
+                "360" or "360p" => 360,
+                "240" or "240p" => 240,
+                "144" or "144p" => 144,
+                _ => null
             };
 
-            // Use direct URL retrieval - simpler and more reliable for streaming
+            string video = height.HasValue
+                ? $"bv[ext=mp4][vcodec^=avc1][height<=?{height.Value}]"
+                : "bv[ext=mp4][vcodec^=avc1]";
+
+            // Prefer H.264 video + AAC audio.
+            // Fall back to a combined stream if available.
+            string format =
+                $"{video}+ba[ext=m4a]/" +
+                $"{video}+ba/" +
+                "b[ext=mp4]/b";
+
             var psi = new ProcessStartInfo
             {
                 FileName = exePath,
-                // Use -f with best format that includes audio automatically
-                Arguments = $"-f \"best\" --no-warnings -g \"{youtubeUrl}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = System.Text.Encoding.UTF8
+                CreateNoWindow = true
             };
 
-            using var process = Process.Start(psi);
-            if (process == null)
-                throw new Exception("Failed to start yt-dlp process");
+            psi.ArgumentList.Add("-f");
+            psi.ArgumentList.Add(format);
+            psi.ArgumentList.Add("--no-playlist");
+            psi.ArgumentList.Add("--no-warnings");
+            psi.ArgumentList.Add("-g");
+            psi.ArgumentList.Add(youtubeUrl);
 
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string errorOutput = await process.StandardError.ReadToEndAsync();
+            using var process = Process.Start(psi)
+                ?? throw new Exception("Could not start yt-dlp.");
+
+            var outputTask =
+                process.StandardOutput.ReadToEndAsync();
+            var errorTask =
+                process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
 
+            string output = await outputTask;
+            string errors = await errorTask;
+
             if (process.ExitCode != 0)
+                throw new Exception(
+                    $"Failed to retrieve streams: {errors}");
+
+            string[] urls = output.Split(
+                new[] { '\r', '\n' },
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries);
+
+            if (urls.Length is < 1 or > 2)
+                throw new Exception(
+                    "yt-dlp returned an unexpected number of URLs.");
+
+            foreach (string url in urls)
             {
-                Debug.WriteLine($"yt-dlp error: {errorOutput}");
-                throw new Exception($"Failed to get stream URL: {errorOutput}");
+                if (!Uri.TryCreate(
+                        url, UriKind.Absolute, out var uri) ||
+                    (uri.Scheme != Uri.UriSchemeHttps &&
+                     uri.Scheme != Uri.UriSchemeHttp))
+                {
+                    throw new Exception("Invalid media URL returned.");
+                }
             }
 
-            // yt-dlp returns the URL directly when using -g flag
-            string streamUrl = output.Trim();
-            
-            if (string.IsNullOrWhiteSpace(streamUrl))
-                throw new Exception("No stream URL returned from yt-dlp");
-
-            Debug.WriteLine($"Stream URL obtained: {streamUrl.Substring(0, Math.Min(100, streamUrl.Length))}...");
-            return streamUrl;
+            return new StreamUrls(
+                urls[0],
+                urls.Length == 2 ? urls[1] : null);
         }
+
+
     }
 }
