@@ -61,6 +61,9 @@ namespace MarkadianPlaylister
                 return;
             }
 
+            if (!enableUpdates)
+                return;
+
             string local = await GetLocalYtDlpVersionAsync(ytPath);
             string latest = await GetLatestGitHubTagAsync(YTDLP_API);
 
